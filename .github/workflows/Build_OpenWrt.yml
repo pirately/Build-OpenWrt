@@ -1,0 +1,226 @@
+#=================================================
+# Description: Build OpenWrt using GitHub Actions
+# Lisence: MIT
+# Author: Jeffen
+#=================================================
+
+name: Build_OpenWrt
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+
+env:
+  REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+  SCKEY: ${{ secrets.SCKEY }}
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Projects
+      uses: actions/checkout@main
+
+    - name: Check server performance
+      run: |
+        echo "警告⚠"
+        echo "若分配的服务器性能不足，务必及时取消，重新运行！"
+        echo "已知编译成功CPU型号：8370C,8171M"
+        echo "已知性能不足CPU型号：8272CL"
+        echo -e "----------------------------CPU信息-------------------------------------------\n"
+        echo "CPU物理数量:$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)"
+        echo -e "CPU核心及版本信息：$(cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c) \n"
+        echo "-------------------------------内存信息-------------------------------------------"
+        echo "已安装内存详细信息："
+        sudo lshw -short -C memory | grep GiB
+        echo -e "\n"
+        echo "-------------------------------硬盘信息-------------------------------------------"
+        echo -e  "硬盘数量：$(ls /dev/sd* | grep -v [1-9] | wc -l) \n"
+        echo "硬盘详情："
+        df -Th
+
+    - name: Load Settings.ini
+      run: |
+        source "${GITHUB_WORKSPACE}/settings/settings.ini"
+        echo "OWRT_URL=${OWRT_URL}" >> $GITHUB_ENV
+        echo "OWRT_BRANCH=${OWRT_BRANCH}" >> $GITHUB_ENV
+        echo "OWRT_TARGET=${OWRT_TARGET}" >> $GITHUB_ENV
+        echo "OWRT_THEME=${OWRT_THEME}" >> $GITHUB_ENV
+        echo "OWRT_NAME=${OWRT_NAME}" >> $GITHUB_ENV
+        echo "OWRT_IP=${OWRT_IP}" >> $GITHUB_ENV
+        echo "OPENWRT_APPLICATIONS=${OPENWRT_APPLICATIONS}" >> $GITHUB_ENV
+        echo "UPLOAD_FIRMWARE=${UPLOAD_FIRMWARE}" >> $GITHUB_ENV        
+        echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
+        echo "INFORMATION_NOTICE=${INFORMATION_NOTICE}" >> $GITHUB_ENV 
+
+    - name: Initialization Environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        docker rmi $(docker images -q)
+        sudo -E apt -yqq update
+        sudo -E apt -yqq purge $(sed -n "1{s/\r$//g;p;q}" $GITHUB_WORKSPACE/settings/depends-ubuntu)
+        sudo -E apt -yqq full-upgrade
+        sudo -E apt -yqq install $(sed -n "2{s/\r$//g;p;q}" $GITHUB_WORKSPACE/settings/depends-ubuntu)
+        sudo -E apt -yqq autoremove --purge
+        sudo -E apt -yqq autoclean
+        sudo -E apt -yqq clean
+        sudo -E systemctl daemon-reload
+        sudo -E timedatectl set-timezone "Asia/Shanghai"
+        sudo -E rm -rf $(sed -n "3{s/\r$//g;p;q}" $GITHUB_WORKSPACE/settings/depends-ubuntu)
+
+    - name: Initialization Values
+      run: |
+        export OWRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")
+        export OWRT_SOURCE=$(echo $OWRT_URL | cut -d '/' -f 5-)
+        export OWRT_TYPE=$(sed -n "1{s/^#//;s/\r$//;p;q}" $GITHUB_WORKSPACE/config/$OWRT_TARGET.config)
+        echo "OWRT_SOURCE=$OWRT_SOURCE" >> $GITHUB_ENV
+        echo "OWRT_TARGET=$OWRT_TARGET" >> $GITHUB_ENV
+        echo "OWRT_DATE=$OWRT_DATE" >> $GITHUB_ENV
+        echo "OWRT_TYPE=$OWRT_TYPE" >> $GITHUB_ENV
+        echo "OWRT_IP=$OWRT_IP" >> $GITHUB_ENV
+
+    - name: Check Files
+      run: |
+        dos2unix $(find ./ -maxdepth 2 -type f -iregex ".*\(txt\|sh\|config\)$")
+        chmod +x $(find ./ -maxdepth 2 -type f -iname "*.sh")
+
+    - name: Clone OpenWrt Source Code
+      run: |
+        git clone --depth=1 $OWRT_URL -b $OWRT_BRANCH ./openwrt
+
+    - name: Update Feeds
+      run: |
+        cd ./openwrt
+
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Custom Scripts
+      run: |
+        cd ./openwrt
+        chmod +x $GITHUB_WORKSPACE/scripts/settings.sh && $GITHUB_WORKSPACE/scripts/settings.sh
+        cd ./package
+        chmod +x $GITHUB_WORKSPACE/scripts/plugins.sh && $GITHUB_WORKSPACE/scripts/plugins.sh
+
+    - name: Load custom configuration
+      run: |
+        git clone https://oauth2:$REPO_TOKEN@github.com/pirately/OpenWrt_Files
+        cp -f OpenWrt_Files/diy/banner openwrt/package/base-files/files/etc/banner
+        sed -i "s/%D %V, %C/OpenWrt $(date +'%Y.%m.%d') by Jeffen/g" openwrt/package/base-files/files/etc/banner
+        cp -f OpenWrt_Files/scripts/diy.sh $GITHUB_WORKSPACE/scripts
+        mv OpenWrt_Files/${{ env.OPENWRT_APPLICATIONS }}/* ./ && rm -rf OpenWrt_Files
+        [ -e files ] && mv files openwrt/files
+        chmod +x $GITHUB_WORKSPACE/scripts/diy.sh
+        cd openwrt
+        $GITHUB_WORKSPACE/scripts/diy.sh
+        rm -rf ./tmp* ./.config*
+        cat $GITHUB_WORKSPACE/config/$OWRT_TARGET.config $GITHUB_WORKSPACE/config/general.config >> .config
+        chmod +x $GITHUB_WORKSPACE/scripts/extras.sh && $GITHUB_WORKSPACE/scripts/extras.sh
+        chmod +x $GITHUB_WORKSPACE/scripts/diy_op.sh && $GITHUB_WORKSPACE/scripts/diy_op.sh
+        make defconfig
+
+    - name: Cleanup Toolchain
+      run: |
+        cd ./openwrt
+        make dirclean
+
+    - name: Download Packages
+      run: |
+        cd ./openwrt
+        make download -j$(($(nproc)+1))
+
+    - name: Cache
+      uses: stupidloud/cachewrtbuild@main
+      with:
+        ccache: 'true'
+        mixkey: ${{ env.OWRT_SOURCE }}
+        clean: ${{ contains(github.event.action, 'nocache') }}
+        prefix: ${{ github.workspace }}/openwrt
+
+    - name: Check space usage
+      if: (!cancelled())
+      run: |
+        echo "硬盘详情："
+        df -hT
+
+    - name: Compile the firmware
+      id: compile
+      run: |
+        cd ./openwrt
+        echo -e "$(($(nproc)+1)) thread compile"
+        make -j$(($(nproc)+1)) || make -j1 V=s &>build.log || (tail -50 build.log; curl -k --data title="❌【$OWRT_SOURCE】编译失败" --data desp="我亲爱的✨主人✨：您编译的【$OWRT_SOURCE】固件失败了✌️💯💐%0A%0A🎄源码：${OWRT_URL}%0A%0A💕分支：【${OWRT_BRANCH}】%0A%0A😋设备：【$OWRT_TARGET】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send"; exit 1)
+
+        echo "status=success" >> $GITHUB_OUTPUT
+
+        echo "========================================"
+        echo "硬盘详情："
+        echo "========================================"
+        df -h
+
+    - name: Organize files
+      id: organize
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      run: |
+        cd ./openwrt && mkdir ./upload
+        rm -rf $(find ./bin/targets/ -iregex ".*\(json\|manifest\|buildinfo\|sha256sums\|packages\|bin\|rootfs.img.gz\|rootfs.tar.gz\|combined.img.gz\)$")
+        cp -rf $(find ./bin/targets/ -type f -iname "*.*") ./upload/
+        cp -rf ./.config ./upload/Config_"$OWRT_TARGET"_"$OWRT_SOURCE"_"$OWRT_DATE".txt
+        cd ./upload
+        chmod +x $GITHUB_WORKSPACE/scripts/renames.sh && $GITHUB_WORKSPACE/scripts/renames.sh
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@main
+      if: env.UPLOAD_FIRMWARE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: OpenWrt_${{ env.OWRT_SOURCE }}_firmware(${{ env.OPENWRT_APPLICATIONS }})_${{ env.OWRT_DATE }}
+        path: ${{ env.FIRMWARE }}
+
+    - name: Generate Release
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
+      run: |
+        touch release.txt
+        cat >> release.txt << EOF    
+        1、源码：${{ env.OWRT_URL }}
+        2、分支：${{ env.OWRT_BRANCH }}
+        3、设备：${{ env.OWRT_TARGET }}
+        -- Build by Jeffen with Github Actions on ${{ env.OWRT_DATE }} for ${{ env.OWRT_TARGET }} device
+        EOF
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload Release
+      uses: softprops/action-gh-release@master
+      if: env.UPLOAD_RELEASE == 'true' && steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.OWRT_SOURCE }}_${{ env.OWRT_TARGET }}_${{ env.OWRT_DATE }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
+
+    - name: Push Information Notice
+      if: env.SCKEY && env.INFORMATION_NOTICE == 'true'
+      run: |
+        if [[ "${{steps.compile.outcome}}" == 'success' ]]; then
+          curl -k --data title="✌️【$OWRT_SOURCE】编译成功" --data desp="我亲爱的✨主人✨：您编译的【$OWRT_SOURCE】固件顺利编译完成了✌️💯💐%0A%0A🎄源码：${OWRT_URL}%0A%0A💕分支：【${OWRT_BRANCH}】%0A%0A😋设备：【$OWRT_TARGET】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send" 
+        fi
+
+    - name: Delete workflow runs
+      uses: Mattraks/delete-workflow-runs@main
+      with:
+        retain_days: 1
+        keep_minimum_runs: 3
+
+    - name: Remove old Releases
+      uses: dev-drprasad/delete-older-releases@master
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      with:
+        keep_latest: 3
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
