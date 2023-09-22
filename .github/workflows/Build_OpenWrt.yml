@@ -110,7 +110,6 @@ jobs:
         git clone https://oauth2:$REPO_TOKEN@github.com/pirately/OpenWrt_Files
         cp -f OpenWrt_Files/diy/banner openwrt/package/base-files/files/etc/banner
         sed -i "s/%D %V, %C/OpenWrt $(date +'%Y.%m.%d') by Jeffen/g" openwrt/package/base-files/files/etc/banner
-        mv OpenWrt_Files/diy/cloudflare/* ./
         cp -f OpenWrt_Files/scripts/diy.sh $GITHUB_WORKSPACE/scripts
         mv OpenWrt_Files/${{ env.OPENWRT_APPLICATIONS }}/* ./ && rm -rf OpenWrt_Files
         [ -e files ] && mv files openwrt/files
