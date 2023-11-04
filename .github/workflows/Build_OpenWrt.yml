@@ -82,11 +82,6 @@ jobs:
         echo "OWRT_TYPE=$OWRT_TYPE" >> $GITHUB_ENV
         echo "OWRT_IP=$OWRT_IP" >> $GITHUB_ENV
 
-    - name: Check Files
-      run: |
-        dos2unix $(find ./ -maxdepth 2 -type f -iregex ".*\(txt\|sh\|config\)$")
-        chmod +x $(find ./ -maxdepth 2 -type f -iname "*.sh")
-
     - name: Clone OpenWrt Source Code
       run: |
         git clone --depth=1 $OWRT_URL -b $OWRT_BRANCH ./openwrt
@@ -97,6 +92,10 @@ jobs:
 
         ./scripts/feeds update -a
         ./scripts/feeds install -a
+
+    - name: Check Scripts
+      run: |
+        find ./ -maxdepth 2 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
 
     - name: Custom Scripts
       run: |

@@ -29,14 +29,7 @@ if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y" >> .config
 fi
 if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
-  if [[ $OWRT_URL == *"lede"* ]] ; then
-    git clone --depth=1 https://github.com/fw876/helloworld.git package/helloworld
-  fi
-  if [[ $OWRT_SOURCE == "immortalwrt" ]]; then
-    svn co https://github.com/fw876/helloworld/trunk/luci-app-ssr-plus
-    rm -rf feeds/luci/applications/luci-app-ssr-plus
-    mv luci-app-ssr-plus feeds/luci/applications
-  fi
+  rm -rf feeds/luci/applications/luci-app-ssr-plus
   #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-ssr-plus=y" >> .config
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
