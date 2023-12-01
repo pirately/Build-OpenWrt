@@ -17,9 +17,9 @@ svn co https://github.com/openwrt/packages/branches/openwrt-23.05/net/haproxy
 rm -rf feeds/packages/net/haproxy
 mv haproxy feeds/packages/net
 
-#删除自带的passwall
+# 删除自带的passwall
 rm -rf feeds/luci/applications/luci-app-passwall
-#删除自带的packages
+# 删除自带的packages
 rm -rf feeds/packages/net/hysteria
 rm -rf feeds/packages/net/sing-box
 #用lede的ssrplus插件还是passwall插件，用ssrplus插件并且固件是lede的话，更新haproxy
