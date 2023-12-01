@@ -103,7 +103,6 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/scripts/settings.sh && $GITHUB_WORKSPACE/scripts/settings.sh
         cd ./package
         chmod +x $GITHUB_WORKSPACE/scripts/plugins.sh && $GITHUB_WORKSPACE/scripts/plugins.sh
-        chmod +x $GITHUB_WORKSPACE/scripts/handles.sh && $GITHUB_WORKSPACE/scripts/handles.sh
 
     - name: Load custom configuration
       run: |
