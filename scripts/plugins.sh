@@ -23,13 +23,9 @@ $CLONE https://github.com/xiaorouji/openwrt-passwall-packages.git
 #Open Clash
 $CLONE --branch "dev" https://github.com/vernesong/OpenClash.git
 #Hello World
-if [[ $OWRT_URL == *"lede"* ]] ; then
-  $CLONE --branch "main" https://github.com/fw876/helloworld.git
-fi
+[[ $OWRT_URL == *"lede"* ]] && $CLONE --branch "main" https://github.com/fw876/helloworld.git
 #Home Proxy
-if [[ $OWRT_URL == *"immortalwrt"* ]] ; then
-  $CLONE --branch "master" https://github.com/immortalwrt/homeproxy.git
-fi
+[[ $OWRT_URL == *"immortalwrt"* ]] && $CLONE --branch "master" https://github.com/immortalwrt/homeproxy.git
 
 # 插件预置
 #修改Tiny Filemanager汉化
@@ -72,7 +68,7 @@ if [ -d *"OpenClash"* ]; then
 	CORE_DEV=https://github.com/vernesong/OpenClash/raw/core/dev/dev/clash-linux
 	CORE_MATE=https://github.com/vernesong/OpenClash/raw/core/dev/meta/clash-linux
 
-	CORE_TYPE=$(echo $OWRT_TARGET | grep -Eiq "64|86" && echo "amd64" || echo "arm64")
+	CORE_TYPE=$(echo $OWRT_TARGET | egrep -iq "64|86" && echo "amd64" || echo "arm64")
 	TUN_VER=$(curl -sfL $CORE_VER | sed -n "2{s/\r$//;p;q}")
 
 	GEO_MMDB=https://github.com/alecthw/mmdb_china_ip_list/raw/release/lite/Country.mmdb
