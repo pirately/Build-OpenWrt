@@ -2,8 +2,12 @@
 
 #精简git命令
 CLONE="git clone --depth=1 --single-branch"
+
+#MOS DNS
+$CLONE https://github.com/sbwml/luci-app-mosdns.git
 #Tiny Filemanager
 $CLONE https://github.com/muink/luci-app-tinyfilemanager.git
+
 #Design Theme
 $CLONE --branch $(echo $OWRT_URL | grep -iq "lede" && echo "main" || echo "js") https://github.com/gngpp/luci-theme-design.git
 $CLONE https://github.com/gngpp/luci-app-design-config.git
@@ -26,12 +30,13 @@ if [[ $OWRT_URL == *"lede"* ]] ; then
 fi
 #Home Proxy
 if [[ $OWRT_URL == *"immortalwrt"* ]] ; then
-  $CLONE --branch "dev" https://github.com/immortalwrt/homeproxy.git
+  $CLONE --branch "master" https://github.com/immortalwrt/homeproxy.git
 fi
 
 #修改Tiny Filemanager汉化
 sed -i '/msgid "Tiny File Manager"/{n; s/msgstr.*/msgstr "文件管理器"/}' ./luci-app-tinyfilemanager/po/zh_Hans/tinyfilemanager.po
 sed -i 's/启用用户验证/用户验证/g;s/家目录/初始目录/g;s/Favicon 路径/收藏夹图标路径/g' ./luci-app-tinyfilemanager/po/zh_Hans/tinyfilemanager.po
+
 #预置OpenClash内核和GEO数据
 CORE_VER=https://raw.githubusercontent.com/vernesong/OpenClash/core/dev/core_version
 CORE_TUN=https://github.com/vernesong/OpenClash/raw/core/dev/premium/clash-linux

@@ -28,6 +28,10 @@ if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y" >> .config
 fi
+if [[ $OPENWRT_APPLICATIONS == "passwall2" ]] ; then
+  #增加luci界面
+  echo "CONFIG_PACKAGE_luci-app-passwall2=y" >> .config
+fi
 if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
   rm -rf feeds/luci/applications/luci-app-ssr-plus
   #增加luci界面
