@@ -1,34 +1,41 @@
 #!/bin/bash
 
-#精简git命令
-CLONE="git clone --depth=1 --single-branch"
+#更新软件包
+UPDATE_PACKAGE() {
+	local pkg_name=$1
+	local pkg_repo=$2
+	local pkg_branch=$3
+	local pkg_special=$4
+	local repo_name=$(echo $pkg_repo | cut -d '/' -f 2)
 
-#MOS DNS
-$CLONE https://github.com/sbwml/luci-app-mosdns.git
+	rm -rf $(find ../feeds/luci/ -type d -iname "*$pkg_name*" -prune)
 
-#Design Theme
-$CLONE --branch $(echo $OWRT_URL | grep -iq "lede" && echo "main" || echo "js") https://github.com/gngpp/luci-theme-design.git
-$CLONE https://github.com/gngpp/luci-app-design-config.git
-#Argon Theme
-$CLONE --branch $(echo $OWRT_URL | grep -iq "lede" && echo "18.06" || echo "master") https://github.com/jerrykuku/luci-theme-argon.git
-$CLONE --branch $(echo $OWRT_URL | grep -iq "lede" && echo "18.06" || echo "master") https://github.com/jerrykuku/luci-app-argon-config.git
-#Linkease
-$CLONE https://github.com/linkease/istore.git
-$CLONE https://github.com/linkease/nas-packages.git
-$CLONE https://github.com/linkease/nas-packages-luci.git
-#Pass Wall
-$CLONE https://github.com/xiaorouji/openwrt-passwall.git
-$CLONE https://github.com/xiaorouji/openwrt-passwall2.git
-$CLONE https://github.com/xiaorouji/openwrt-passwall-packages.git
-#Open Clash
-$CLONE --branch "dev" https://github.com/vernesong/OpenClash.git
-#Hello World
+	git clone --depth=1 --single-branch --branch $pkg_branch "https://github.com/$pkg_repo.git"
+
+	if [[ $pkg_special == "true" ]]; then
+		cp -rf $(find ./$repo_name/ -type d -iname "*$pkg_name*" -prune) ./
+		rm -rf ./$repo_name
+	fi
+}
+
+UPDATE_PACKAGE "design" "gngpp/luci-theme-design" "$([[ $OWRT_URL == *"lede"* ]] && echo "main" || echo "js")"
+UPDATE_PACKAGE "design-config" "gngpp/luci-app-design-config" "master"
+UPDATE_PACKAGE "argon" "jerrykuku/luci-theme-argon" "$([[ $OWRT_URL == *"lede"* ]] && echo "18.06" || echo "master")"
+UPDATE_PACKAGE "argon-config" "jerrykuku/luci-app-argon-config" "$([[ $OWRT_URL == *"lede"* ]] && echo "18.06" || echo "master")"
+
+UPDATE_PACKAGE "fileassistant" "Lienol/openwrt-package" "main" "true"
+UPDATE_PACKAGE "mosdns" "sbwml/luci-app-mosdns" "v5"
+
+UPDATE_PACKAGE "passwall" "xiaorouji/openwrt-passwall" "main"
+UPDATE_PACKAGE "passwall2" "xiaorouji/openwrt-passwall2" "main"
+UPDATE_PACKAGE "passwall-packages" "xiaorouji/openwrt-passwall-packages" "main"
+UPDATE_PACKAGE "openclash" "vernesong/OpenClash" "dev"
+
 if [[ $OWRT_URL == *"lede"* ]]; then
-	$CLONE --branch "master" https://github.com/fw876/helloworld.git
+	UPDATE_PACKAGE "helloworld" "fw876/helloworld" "master"
 fi
-#Home Proxy
 if [[ $OWRT_URL == *"immortalwrt"* ]]; then
-	$CLONE --branch "mdev" https://github.com/muink/homeproxy.git
+	UPDATE_PACKAGE "homeproxy" "immortalwrt/homeproxy" "dev"
 fi
 
 # 插件预置
