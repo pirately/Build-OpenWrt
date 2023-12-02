@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #删除冲突插件
-rm -rf $(find ./feeds/luci/ -maxdepth 2 -type d -iregex ".*\(argon\|design\|helloworld\|homeproxy\|openclash\|passwall\).*")
+rm -rf $(find ./feeds/luci/ -maxdepth 2 -type d -iregex ".*\(argon\|design\|helloworld\|homeproxy\|openclash\|passwall\|mosdns\).*")
 #修改默认主题
 sed -i "s/luci-theme-bootstrap/luci-theme-$OWRT_THEME/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
 #修改默认IP地址
@@ -34,5 +34,5 @@ UPDATE_VERSION() {
 	fi
 }
 
-UPDATE_VERSION "sing-box" "1.7.0" "e9cc481aac006f4082e6a690f766a65ee40532a19781cdbcff9f2b05a61e3118"
+UPDATE_VERSION "sing-box" "1.7.1" "e1a5d7c9a7f3a23da73f4d420aed19c8cc5f9b85af1e190fe9502658ec6fac3a"
 UPDATE_VERSION "naiveproxy" "119.0.6045.66-1" "b979e575353ec67a00a36a25fbf506fbbe41ea95e10ff5f60123e4be9f20eb83"

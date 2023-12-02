@@ -3,8 +3,8 @@
 #精简git命令
 CLONE="git clone --depth=1 --single-branch"
 
-#Tiny Filemanager
-$CLONE https://github.com/muink/luci-app-tinyfilemanager.git
+#MOS DNS
+$CLONE https://github.com/sbwml/luci-app-mosdns.git
 
 #Design Theme
 $CLONE --branch $(echo $OWRT_URL | grep -iq "lede" && echo "main" || echo "js") https://github.com/gngpp/luci-theme-design.git
@@ -23,46 +23,61 @@ $CLONE https://github.com/xiaorouji/openwrt-passwall-packages.git
 #Open Clash
 $CLONE --branch "dev" https://github.com/vernesong/OpenClash.git
 #Hello World
-[[ $OWRT_URL == *"lede"* ]] && $CLONE --branch "main" https://github.com/fw876/helloworld.git
+if [[ $OWRT_URL == *"lede"* ]]; then
+	$CLONE --branch "master" https://github.com/fw876/helloworld.git
+fi
 #Home Proxy
-[[ $OWRT_URL == *"immortalwrt"* ]] && $CLONE --branch "mdev" https://github.com/muink/homeproxy.git
+if [[ $OWRT_URL == *"immortalwrt"* ]]; then
+	$CLONE --branch "mdev" https://github.com/muink/homeproxy.git
+fi
 
 # 插件预置
-#修改Tiny Filemanager汉化
-if [ -d *"tinyfilemanager"* ]; then
-	sed -i '/msgid "Tiny File Manager"/{n; s/msgstr.*/msgstr "文件管理器"/}' ./luci-app-tinyfilemanager/po/zh_Hans/tinyfilemanager.po
-	sed -i 's/启用用户验证/用户验证/g;s/家目录/初始目录/g;s/Favicon 路径/收藏夹图标路径/g' ./luci-app-tinyfilemanager/po/zh_Hans/tinyfilemanager.po
-fi
-
-#预置HomeProxy列表
-if [ -d *"homeproxy"* ]; then
-	git clone --depth=5 --single-branch --branch "master" https://github.com/1715173329/IPCIDR-CHINA.git ./ip
-	git clone --depth=1 --single-branch --branch "release" https://github.com/Loyalsoldier/v2ray-rules-dat.git ./list
-
+#预置HomeProxy数据
+if [[ -d "homeproxy" ]]; then
 	HP_PATCH="../homeproxy/root/etc/homeproxy/resources"
 
-	cd ./ip
-	echo $(git log -1 --pretty=format:'%s' -- ipv4.txt | grep -o "[0-9]*") > ipv4.ver
-	echo $(git log -1 --pretty=format:'%s' -- ipv6.txt | grep -o "[0-9]*") > ipv6.ver
-	cp -f ipv4.txt $HP_PATCH/china_ip4.txt
-	cp -f ipv4.ver $HP_PATCH/china_ip4.ver
-	cp -f ipv6.txt $HP_PATCH/china_ip6.txt
-	cp -f ipv6.ver $HP_PATCH/china_ip6.ver
+	UPDATE_RESOURCES() {
+		local res_type=$1
+		local res_repo=$2
+		local res_depth=$3
+		local res_branch=$4
+		local res_file=$5
 
-	cd ../list
-	echo $(git log -1 --pretty=format:'%s' | grep -o "[0-9]*") > gfw.ver
-	echo $(git log -1 --pretty=format:'%s' | grep -o "[0-9]*") > direct-list.ver
-	cp -f gfw.txt $HP_PATCH/gfw_list.txt
-	cp -f gfw.ver $HP_PATCH/gfw_list.ver
-	cp -f direct-list.txt $HP_PATCH/china_list.txt
-	cp -f direct-list.ver $HP_PATCH/china_list.ver
+		git clone --depth=$res_depth --single-branch --branch $res_branch "https://github.com/$res_repo.git" ./$res_type/
 
-	cd ..
-	rm -rf ./ip ./list
+		cd ./$res_type/
+
+		if [[ "${res_file##*.}" == "txt" ]]; then
+			echo $(git log -1 --pretty=format:'%s' -- $res_file | grep -o "[0-9]*") > "$res_type.ver"
+			mv -f $res_file "$res_type.${res_file##*.}"
+		fi
+		if [[ "${res_file##*.}" == "zip" ]]; then
+			echo $(git log -1 --pretty=format:'%s' | cut -d ' ' -f 1) > "$res_type.ver"
+			curl -sfL -O "https://github.com/$res_repo/archive/$res_file"
+			mv -f $res_file $HP_PATCH/"${res_repo//\//_}.${res_file##*.}"
+		fi
+		if [[ "${res_file##*.}" == "db" ]]; then
+			local res_ver=$(git tag | tail -n 1)
+			echo $res_ver > "$res_type.ver"
+			curl -sfL -O "https://github.com/$res_repo/releases/download/$res_ver/$res_file"
+		fi
+
+		cp -f $res_type.* $HP_PATCH/
+
+		cd .. && rm -rf ./$res_type/
+	}
+
+	UPDATE_RESOURCES "china_ip4" "1715173329/IPCIDR-CHINA" "5" "master" "ipv4.txt"
+	UPDATE_RESOURCES "china_ip6" "1715173329/IPCIDR-CHINA" "5" "master" "ipv6.txt"
+	UPDATE_RESOURCES "gfw_list" "Loyalsoldier/v2ray-rules-dat" "1" "release" "gfw.txt"
+	UPDATE_RESOURCES "china_list" "Loyalsoldier/v2ray-rules-dat" "1" "release" "direct-list.txt"
+	UPDATE_RESOURCES "geoip" "1715173329/sing-geoip" "1" "master" "geoip.db"
+	UPDATE_RESOURCES "geosite" "1715173329/sing-geosite" "1" "master" "geosite.db"
+	UPDATE_RESOURCES "clash_dashboard" "MetaCubeX/metacubexd" "1" "gh-pages" "gh-pages.zip"
 fi
 
-#预置OpenClash内核和GEO数据
-if [ -d *"OpenClash"* ]; then
+#预置OpenClash内核和数据
+if [[ -d "OpenClash" ]]; then
 	CORE_VER=https://raw.githubusercontent.com/vernesong/OpenClash/core/dev/core_version
 	CORE_TUN=https://github.com/vernesong/OpenClash/raw/core/dev/premium/clash-linux
 	CORE_DEV=https://github.com/vernesong/OpenClash/raw/core/dev/dev/clash-linux
@@ -76,24 +91,24 @@ if [ -d *"OpenClash"* ]; then
 	GEO_IP=https://github.com/Loyalsoldier/v2ray-rules-dat/raw/release/geoip.dat
 	META_DB=https://github.com/MetaCubeX/meta-rules-dat/raw/release/geoip.metadb
 
-	cd ./OpenClash/luci-app-openclash/root/etc/openclash
+	cd ./OpenClash/luci-app-openclash/root/etc/openclash/
 
-	curl -sfL -o ./Country.mmdb $GEO_MMDB
-	curl -sfL -o ./GeoSite.dat $GEO_SITE
-	curl -sfL -o ./GeoIP.dat $GEO_IP
-	curl -sfL -o ./GeoIP.metadb $META_DB
+	curl -sfL -o Country.mmdb $GEO_MMDB
+	curl -sfL -o GeoSite.dat $GEO_SITE
+	curl -sfL -o GeoIP.dat $GEO_IP
+	curl -sfL -o GeoIP.metadb $META_DB
 
-	mkdir ./core && cd ./core
+	mkdir ./core/ && cd ./core/
 
-	curl -sfL -o ./tun.gz "$CORE_TUN"-"$CORE_TYPE"-"$TUN_VER".gz
-	gzip -d ./tun.gz && mv ./tun ./clash_tun
+	curl -sfL -o tun.gz "$CORE_TUN"-"$CORE_TYPE"-"$TUN_VER".gz
+	gzip -d tun.gz && mv -f tun clash_tun
 
-	curl -sfL -o ./meta.tar.gz "$CORE_MATE"-"$CORE_TYPE".tar.gz
-	tar -zxf ./meta.tar.gz && mv ./clash ./clash_meta
+	curl -sfL -o meta.tar.gz "$CORE_MATE"-"$CORE_TYPE".tar.gz
+	tar -zxf meta.tar.gz && mv -f clash clash_meta
 
-	curl -sfL -o ./dev.tar.gz "$CORE_DEV"-"$CORE_TYPE".tar.gz
-	tar -zxf ./dev.tar.gz
+	curl -sfL -o dev.tar.gz "$CORE_DEV"-"$CORE_TYPE".tar.gz
+	tar -zxf dev.tar.gz
 
-	chmod +x ./clash*
-	rm -rf ./*.gz
+	chmod +x clash*
+	rm -rf *.gz
 fi
