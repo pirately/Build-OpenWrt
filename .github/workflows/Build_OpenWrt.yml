@@ -44,12 +44,12 @@ jobs:
     - name: Load Settings.ini
       run: |
         source "${GITHUB_WORKSPACE}/settings/settings.ini"
-        echo "OWRT_URL=${OWRT_URL}" >> $GITHUB_ENV
-        echo "OWRT_BRANCH=${OWRT_BRANCH}" >> $GITHUB_ENV
-        echo "OWRT_TARGET=${OWRT_TARGET}" >> $GITHUB_ENV
-        echo "OWRT_THEME=${OWRT_THEME}" >> $GITHUB_ENV
-        echo "OWRT_NAME=${OWRT_NAME}" >> $GITHUB_ENV
-        echo "OWRT_IP=${OWRT_IP}" >> $GITHUB_ENV
+        echo "WRT_URL=${WRT_URL}" >> $GITHUB_ENV
+        echo "WRT_BRANCH=${WRT_BRANCH}" >> $GITHUB_ENV
+        echo "WRT_TARGET=${WRT_TARGET}" >> $GITHUB_ENV
+        echo "WRT_THEME=${WRT_THEME}" >> $GITHUB_ENV
+        echo "WRT_NAME=${WRT_NAME}" >> $GITHUB_ENV
+        echo "WRT_IP=${WRT_IP}" >> $GITHUB_ENV
         echo "OPENWRT_APPLICATIONS=${OPENWRT_APPLICATIONS}" >> $GITHUB_ENV
         echo "UPLOAD_FIRMWARE=${UPLOAD_FIRMWARE}" >> $GITHUB_ENV        
         echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
@@ -73,18 +73,18 @@ jobs:
 
     - name: Initialization Values
       run: |
-        export OWRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")
-        export OWRT_SOURCE=$(echo $OWRT_URL | cut -d '/' -f 5-)
-        export OWRT_TYPE=$(sed -n "1{s/^#//;s/\r$//;p;q}" $GITHUB_WORKSPACE/config/$OWRT_TARGET.config)
-        echo "OWRT_SOURCE=$OWRT_SOURCE" >> $GITHUB_ENV
-        echo "OWRT_TARGET=$OWRT_TARGET" >> $GITHUB_ENV
-        echo "OWRT_DATE=$OWRT_DATE" >> $GITHUB_ENV
-        echo "OWRT_TYPE=$OWRT_TYPE" >> $GITHUB_ENV
-        echo "OWRT_IP=$OWRT_IP" >> $GITHUB_ENV
+        export WRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")
+        export WRT_SOURCE=$(echo $WRT_URL | cut -d '/' -f 5-)
+        export WRT_TYPE=$(sed -n "1{s/^#//;s/\r$//;p;q}" $GITHUB_WORKSPACE/config/$WRT_TARGET.config)
+        echo "WRT_SOURCE=$WRT_SOURCE" >> $GITHUB_ENV
+        echo "WRT_TARGET=$WRT_TARGET" >> $GITHUB_ENV
+        echo "WRT_DATE=$WRT_DATE" >> $GITHUB_ENV
+        echo "WRT_TYPE=$WRT_TYPE" >> $GITHUB_ENV
+        echo "WRT_IP=$WRT_IP" >> $GITHUB_ENV
 
     - name: Clone OpenWrt Source Code
       run: |
-        git clone --depth=1 $OWRT_URL -b $OWRT_BRANCH ./openwrt
+        git clone --depth=1 $WRT_URL -b $WRT_BRANCH ./openwrt
 
     - name: Update Feeds
       run: |
@@ -116,7 +116,7 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/scripts/diy.sh
         rm -rf ./tmp* ./.config*
-        cat $GITHUB_WORKSPACE/config/$OWRT_TARGET.config $GITHUB_WORKSPACE/config/general.config >> .config
+        cat $GITHUB_WORKSPACE/config/$WRT_TARGET.config $GITHUB_WORKSPACE/config/general.config >> .config
         chmod +x $GITHUB_WORKSPACE/scripts/extras.sh && $GITHUB_WORKSPACE/scripts/extras.sh
         chmod +x $GITHUB_WORKSPACE/scripts/diy_op.sh && $GITHUB_WORKSPACE/scripts/diy_op.sh
         make defconfig
@@ -135,7 +135,7 @@ jobs:
       uses: stupidloud/cachewrtbuild@main
       with:
         ccache: 'true'
-        mixkey: ${{ env.OWRT_SOURCE }}
+        mixkey: ${{ env.WRT_SOURCE }}
         clean: ${{ contains(github.event.action, 'nocache') }}
         prefix: ${{ github.workspace }}/openwrt
 
@@ -150,7 +150,7 @@ jobs:
       run: |
         cd ./openwrt
         echo -e "$(($(nproc)+1)) thread compile"
-        make -j$(($(nproc)+1)) || make -j1 V=s &>build.log || (tail -50 build.log; curl -k --data title="❌【$OWRT_SOURCE】编译失败" --data desp="我亲爱的✨主人✨：您编译的【$OWRT_SOURCE】固件失败了✌️💯💐%0A%0A🎄源码：${OWRT_URL}%0A%0A💕分支：【${OWRT_BRANCH}】%0A%0A😋设备：【$OWRT_TARGET】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send"; exit 1)
+        make -j$(($(nproc)+1)) || make -j1 V=s &>build.log || (tail -50 build.log; curl -k --data title="❌【$WRT_SOURCE】编译失败" --data desp="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件失败了✌️💯💐%0A%0A🎄源码：${WRT_URL}%0A%0A💕分支：【${WRT_BRANCH}】%0A%0A😋设备：【$WRT_TARGET】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send"; exit 1)
 
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -166,7 +166,7 @@ jobs:
         cd ./openwrt && mkdir ./upload
         rm -rf $(find ./bin/targets/ -iregex ".*\(json\|manifest\|buildinfo\|sha256sums\|packages\|bin\|rootfs.img.gz\|rootfs.tar.gz\|combined.img.gz\)$")
         cp -rf $(find ./bin/targets/ -type f -iname "*.*") ./upload/
-        cp -rf ./.config ./upload/Config_"$OWRT_TARGET"_"$OWRT_SOURCE"_"$OWRT_DATE".txt
+        cp -rf ./.config ./upload/Config_"$WRT_TARGET"_"$WRT_SOURCE"_"$WRT_DATE".txt
         cd ./upload
         chmod +x $GITHUB_WORKSPACE/scripts/renames.sh && $GITHUB_WORKSPACE/scripts/renames.sh
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
@@ -176,7 +176,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: env.UPLOAD_FIRMWARE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: OpenWrt_${{ env.OWRT_SOURCE }}_firmware(${{ env.OPENWRT_APPLICATIONS }})_${{ env.OWRT_DATE }}
+        name: OpenWrt_${{ env.WRT_SOURCE }}_firmware(${{ env.OPENWRT_APPLICATIONS }})_${{ env.WRT_DATE }}
         path: ${{ env.FIRMWARE }}
 
     - name: Generate Release
@@ -185,10 +185,10 @@ jobs:
       run: |
         touch release.txt
         cat >> release.txt << EOF    
-        1、源码：${{ env.OWRT_URL }}
-        2、分支：${{ env.OWRT_BRANCH }}
-        3、设备：${{ env.OWRT_TARGET }}
-        -- Build by Jeffen with Github Actions on ${{ env.OWRT_DATE }} for ${{ env.OWRT_TARGET }} device
+        1、源码：${{ env.WRT_URL }}
+        2、分支：${{ env.WRT_BRANCH }}
+        3、设备：${{ env.WRT_TARGET }}
+        -- Build by Jeffen with Github Actions on ${{ env.WRT_DATE }} for ${{ env.WRT_TARGET }} device
         EOF
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -198,7 +198,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ env.OWRT_SOURCE }}_${{ env.OWRT_TARGET }}_${{ env.OWRT_DATE }}
+        tag_name: ${{ env.WRT_SOURCE }}_${{ env.WRT_TARGET }}_${{ env.WRT_DATE }}
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
 
@@ -206,7 +206,7 @@ jobs:
       if: env.SCKEY && env.INFORMATION_NOTICE == 'true'
       run: |
         if [[ "${{steps.compile.outcome}}" == 'success' ]]; then
-          curl -k --data title="✌️【$OWRT_SOURCE】编译成功" --data desp="我亲爱的✨主人✨：您编译的【$OWRT_SOURCE】固件顺利编译完成了✌️💯💐%0A%0A🎄源码：${OWRT_URL}%0A%0A💕分支：【${OWRT_BRANCH}】%0A%0A😋设备：【$OWRT_TARGET】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send" 
+          curl -k --data title="✌️【$WRT_SOURCE】编译成功" --data desp="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件顺利编译完成了✌️💯💐%0A%0A🎄源码：${WRT_URL}%0A%0A💕分支：【${WRT_BRANCH}】%0A%0A😋设备：【$WRT_TARGET】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send" 
         fi
 
     - name: Delete workflow runs

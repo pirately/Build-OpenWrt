@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
-if [[ $OWRT_URL == *"lede"* ]] ; then
+if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" package/lean/default-settings/files/zzz-default-settings   
   sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $(date +%Y.%m.%d)'/g" package/lean/default-settings/files/zzz-default-settings
 else
@@ -46,19 +46,19 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
 fi
 
 # BBR
-if [[ $OWRT_URL == *"lede"* ]] ; then
+if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" feeds/luci/applications/luci-app-turboacc/root/etc/config/turboacc
 fi
 
 # 配置网络环境
 # 旁路由
-if [[ $OWRT_URL == *"lede"* ]] ; then
+if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i '$i uci set network.lan.ifname="eth0"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci set network.lan.gateway="10.0.1.2"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci set network.lan.dns="223.5.5.5"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci commit network' package/lean/default-settings/files/zzz-default-settings
 fi
-if [[ $OWRT_SOURCE == "immortalwrt" ]]; then
+if [[ $WRT_SOURCE == "immortalwrt" ]]; then
   sed -i '$i uci set network.lan.ifname="eth0"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.lan.gateway="10.0.1.2"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.lan.dns="223.5.5.5"' package/emortal/default-settings/files/99-default-settings

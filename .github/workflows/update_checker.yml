@@ -37,13 +37,13 @@ jobs:
     - name: Load Settings.ini
       run: |
         source "${GITHUB_WORKSPACE}/settings/settings.ini"
-        echo "OWRT_URL=${OWRT_URL}" >> $GITHUB_ENV
-        echo "OWRT_BRANCH=${OWRT_BRANCH}" >> $GITHUB_ENV
+        echo "WRT_URL=${WRT_URL}" >> $GITHUB_ENV
+        echo "WRT_BRANCH=${WRT_BRANCH}" >> $GITHUB_ENV
 
     - name: Get Commit Hash
       id: getHash
       run: |
-        git clone --depth 1 $OWRT_URL -b $OWRT_BRANCH ./openwrt
+        git clone --depth 1 $WRT_URL -b $WRT_BRANCH ./openwrt
         cd openwrt
         echo "commitHash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
