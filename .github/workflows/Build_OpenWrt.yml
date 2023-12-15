@@ -86,6 +86,10 @@ jobs:
       run: |
         git clone --depth=1 $WRT_URL -b $WRT_BRANCH ./openwrt
 
+    - name: Check Scripts
+      run: |
+        find ./ -maxdepth 2 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
+
     - name: Update Feeds
       run: |
         cd ./openwrt
@@ -93,9 +97,12 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: Check Scripts
+    - name: Custom Packages
       run: |
-        find ./ -maxdepth 2 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
+        cd ./openwrt/package/
+
+        chmod +x $GITHUB_WORKSPACE/scripts/packages.sh && $GITHUB_WORKSPACE/scripts/packages.sh
+        chmod +x $GITHUB_WORKSPACE/scripts/handles.sh && $GITHUB_WORKSPACE/scripts/handles.sh
 
     - name: Custom Scripts
       run: |
@@ -112,12 +119,11 @@ jobs:
         cp -f OpenWrt_Files/scripts/diy.sh $GITHUB_WORKSPACE/scripts
         mv OpenWrt_Files/${{ env.OPENWRT_APPLICATIONS }}/* ./ && rm -rf OpenWrt_Files
         [ -e files ] && mv files openwrt/files
-        chmod +x $GITHUB_WORKSPACE/scripts/diy.sh
         cd openwrt
-        $GITHUB_WORKSPACE/scripts/diy.sh
         rm -rf ./tmp* ./.config*
         cat $GITHUB_WORKSPACE/config/$WRT_TARGET.config $GITHUB_WORKSPACE/config/general.config >> .config
-        chmod +x $GITHUB_WORKSPACE/scripts/extras.sh && $GITHUB_WORKSPACE/scripts/extras.sh
+        chmod +x $GITHUB_WORKSPACE/scripts/settings.sh && $GITHUB_WORKSPACE/scripts/settings.sh
+        chmod +x $GITHUB_WORKSPACE/scripts/diy.sh && $GITHUB_WORKSPACE/scripts/diy.sh
         chmod +x $GITHUB_WORKSPACE/scripts/diy_op.sh && $GITHUB_WORKSPACE/scripts/diy_op.sh
         make defconfig
 
@@ -164,11 +170,16 @@ jobs:
       if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
         cd ./openwrt && mkdir ./upload
-        rm -rf $(find ./bin/targets/ -iregex ".*\(json\|manifest\|buildinfo\|sha256sums\|packages\|bin\|rootfs.img.gz\|rootfs.tar.gz\|combined.img.gz\)$")
-        cp -rf $(find ./bin/targets/ -type f -iname "*.*") ./upload/
         cp -rf ./.config ./upload/Config_"$WRT_TARGET"_"$WRT_SOURCE"_"$WRT_DATE".txt
-        cd ./upload
-        chmod +x $GITHUB_WORKSPACE/scripts/renames.sh && $GITHUB_WORKSPACE/scripts/renames.sh
+        rm -rf $(find ./bin/targets/ -iregex ".*\(json\|manifest\|buildinfo\|sha256sums\|packages\|bin\|rootfs.img.gz\|rootfs.tar.gz\|combined.img.gz\)$")
+        for TYPE in $WRT_TYPE ; do
+          for FILE in $(find ./bin/targets/ -type f -iname "*$TYPE*.*") ; do
+            EXT=$(basename $FILE | cut -d '.' -f 2-)
+            NAME=$(basename $FILE | cut -d '.' -f 1 | grep -io "\($TYPE\).*")
+            NEW_FILE="$WRT_SOURCE"_"$NAME"_"$WRT_DATE"."$EXT"
+            mv -f $FILE ./upload/$NEW_FILE
+          done
+        done
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
