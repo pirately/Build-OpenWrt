@@ -101,15 +101,8 @@ jobs:
       run: |
         cd ./openwrt/package/
 
-        chmod +x $GITHUB_WORKSPACE/scripts/packages.sh && $GITHUB_WORKSPACE/scripts/packages.sh
-        chmod +x $GITHUB_WORKSPACE/scripts/handles.sh && $GITHUB_WORKSPACE/scripts/handles.sh
-
-    - name: Custom Scripts
-      run: |
-        cd ./openwrt
-        chmod +x $GITHUB_WORKSPACE/scripts/settings.sh && $GITHUB_WORKSPACE/scripts/settings.sh
-        cd ./package
-        chmod +x $GITHUB_WORKSPACE/scripts/plugins.sh && $GITHUB_WORKSPACE/scripts/plugins.sh
+        $GITHUB_WORKSPACE/scripts/packages.sh
+        $GITHUB_WORKSPACE/scripts/handles.sh
 
     - name: Load custom configuration
       run: |
