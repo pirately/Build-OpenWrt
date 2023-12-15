@@ -101,8 +101,8 @@ jobs:
       run: |
         cd ./openwrt/package/
 
-        chmod +x $GITHUB_WORKSPACE/scripts/packages.sh && $GITHUB_WORKSPACE/scripts/packages.sh
-        chmod +x $GITHUB_WORKSPACE/scripts/handles.sh && $GITHUB_WORKSPACE/scripts/handles.sh
+        $GITHUB_WORKSPACE/scripts/packages.sh
+        $GITHUB_WORKSPACE/scripts/handles.sh
 
     - name: Load custom configuration
       run: |
@@ -163,16 +163,11 @@ jobs:
       if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
         cd ./openwrt && mkdir ./upload
-        cp -rf ./.config ./upload/Config_"$WRT_TARGET"_"$WRT_SOURCE"_"$WRT_DATE".txt
         rm -rf $(find ./bin/targets/ -iregex ".*\(json\|manifest\|buildinfo\|sha256sums\|packages\|bin\|rootfs.img.gz\|rootfs.tar.gz\|combined.img.gz\)$")
-        for TYPE in $WRT_TYPE ; do
-          for FILE in $(find ./bin/targets/ -type f -iname "*$TYPE*.*") ; do
-            EXT=$(basename $FILE | cut -d '.' -f 2-)
-            NAME=$(basename $FILE | cut -d '.' -f 1 | grep -io "\($TYPE\).*")
-            NEW_FILE="$WRT_SOURCE"_"$NAME"_"$WRT_DATE"."$EXT"
-            mv -f $FILE ./upload/$NEW_FILE
-          done
-        done
+        cp -rf $(find ./bin/targets/ -type f -iname "*.*") ./upload/
+        cp -rf ./.config ./upload/Config_"$WRT_TARGET"_"$WRT_SOURCE"_"$WRT_DATE".txt
+        cd ./upload
+        chmod +x $GITHUB_WORKSPACE/scripts/renames.sh && $GITHUB_WORKSPACE/scripts/renames.sh
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
