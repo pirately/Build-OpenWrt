@@ -26,7 +26,6 @@ UPDATE_PACKAGE "design" "gngpp/luci-theme-design" "$([[ $WRT_URL == *"lede"* ]] 
 UPDATE_PACKAGE "design-config" "gngpp/luci-app-design-config" "master"
 UPDATE_PACKAGE "argon" "jerrykuku/luci-theme-argon" "$([[ $WRT_URL == *"lede"* ]] && echo "18.06" || echo "master")"
 UPDATE_PACKAGE "argon-config" "jerrykuku/luci-app-argon-config" "$([[ $WRT_URL == *"lede"* ]] && echo "18.06" || echo "master")"
-UPDATE_PACKAGE "kucat" "sirpdboy/luci-theme-kucat" "$([[ $WRT_URL == *"lede"* ]] && echo "main" || echo "js")"
 
 UPDATE_PACKAGE "passwall" "xiaorouji/openwrt-passwall" "main"
 UPDATE_PACKAGE "passwall2" "xiaorouji/openwrt-passwall2" "main"
