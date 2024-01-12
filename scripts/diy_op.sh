@@ -18,10 +18,10 @@ rm -rf feeds/packages/net/haproxy
 mv haproxy feeds/packages/net
 
 # 删除自带的passwall
-rm -rf feeds/luci/applications/luci-app-passwall
+# rm -rf feeds/luci/applications/luci-app-passwall
 # 删除自带的packages
-rm -rf feeds/packages/net/hysteria
-rm -rf feeds/packages/net/sing-box
+# rm -rf feeds/packages/net/hysteria
+# rm -rf feeds/packages/net/sing-box
 #用lede的ssrplus插件还是passwall插件，用ssrplus插件并且固件是lede的话，更新haproxy
 if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
   #增加luci界面
@@ -33,14 +33,14 @@ if [[ $OPENWRT_APPLICATIONS == "passwall2" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-passwall2=y" >> .config
 fi
 if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
-  rm -rf feeds/luci/applications/luci-app-ssr-plus
+  # rm -rf feeds/luci/applications/luci-app-ssr-plus
   #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-ssr-plus=y" >> .config
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
 fi
 #openclash插件
 if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
-  rm -rf feeds/luci/applications/luci-app-openclash
+  # rm -rf feeds/luci/applications/luci-app-openclash
   #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 fi
