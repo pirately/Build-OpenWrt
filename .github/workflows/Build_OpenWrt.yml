@@ -74,9 +74,11 @@ jobs:
     - name: Initialization Values
       run: |
         export WRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")
+        export WRT_REPO=$(basename $GITHUB_WORKSPACE)
         export WRT_SOURCE=$(echo $WRT_URL | cut -d '/' -f 5-)
         export WRT_TYPE=$(sed -n "1{s/^#//;s/\r$//;p;q}" $GITHUB_WORKSPACE/config/$WRT_TARGET.config)
         echo "WRT_DATE=$WRT_DATE" >> $GITHUB_ENV
+        echo "WRT_REPO=$WRT_REPO" >> $GITHUB_ENV
         echo "WRT_SOURCE=$WRT_SOURCE" >> $GITHUB_ENV
         echo "WRT_TARGET=$WRT_TARGET" >> $GITHUB_ENV
         echo "WRT_TYPE=$WRT_TYPE" >> $GITHUB_ENV
@@ -176,7 +178,15 @@ jobs:
         cp -rf $(find ./bin/targets/ -type f -iname "*.*") ./upload/
         cp -rf ./.config ./upload/Config_"$WRT_TARGET"_"$WRT_SOURCE"_"$WRT_DATE".txt
         cd ./upload
-        chmod +x $GITHUB_WORKSPACE/scripts/renames.sh && $GITHUB_WORKSPACE/scripts/renames.sh
+        # chmod +x $GITHUB_WORKSPACE/scripts/renames.sh && $GITHUB_WORKSPACE/scripts/renames.sh
+        for var in $WRT_TYPE ; do
+          for file in $(find ./ -type f -iname "*$var*.*" ! -iname "*.txt") ; do
+            ext=$(basename "$file" | cut -d '.' -f 2-)
+            name=$(basename "$file" | cut -d '.' -f 1 | grep -io "\($var\).*")
+            new_file="$WRT_SOURCE"_"$name"_"$WRT_DATE"."$ext"
+            mv -f "$file" "$new_file"
+          done
+        done
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
