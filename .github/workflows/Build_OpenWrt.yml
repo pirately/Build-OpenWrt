@@ -77,11 +77,8 @@ jobs:
         export WRT_REPO=$(basename $GITHUB_WORKSPACE)
         export WRT_SOURCE=$(echo $WRT_URL | cut -d '/' -f 5-)
         export WRT_TYPE=$(sed -n "1{s/^#//;s/\r$//;p;q}" $GITHUB_WORKSPACE/config/$WRT_TARGET.config)
-<<<<<<< HEAD
         echo "WRT_DATE=$WRT_DATE" >> $GITHUB_ENV
         echo "WRT_REPO=$WRT_REPO" >> $GITHUB_ENV
-=======
->>>>>>> parent of ad22399 (update)
         echo "WRT_SOURCE=$WRT_SOURCE" >> $GITHUB_ENV
         echo "WRT_TARGET=$WRT_TARGET" >> $GITHUB_ENV
         echo "WRT_DATE=$WRT_DATE" >> $GITHUB_ENV
@@ -90,7 +87,7 @@ jobs:
 
     - name: Clone OpenWrt Source Code
       run: |
-        git clone --depth=1 $WRT_URL -b $WRT_BRANCH ./openwrt
+        git clone --depth=1 --single-branch --branch $WRT_BRANCH $WRT_URL ./openwrt
 
     - name: Check Scripts
       run: |
