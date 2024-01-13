@@ -13,9 +13,9 @@ fi
 echo "CONFIG_PACKAGE_bash=y" >> .config
 
 # OpenWrt官方HaProxy
-svn co https://github.com/openwrt/packages/branches/openwrt-23.05/net/haproxy
-rm -rf feeds/packages/net/haproxy
-mv haproxy feeds/packages/net
+# svn co https://github.com/openwrt/packages/branches/openwrt-23.05/net/haproxy
+# rm -rf feeds/packages/net/haproxy
+# mv haproxy feeds/packages/net
 
 # 删除自带的passwall
 # rm -rf feeds/luci/applications/luci-app-passwall
