@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
+# 加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
 if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" package/lean/default-settings/files/zzz-default-settings   
   sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $(date +%Y.%m.%d)'/g" package/lean/default-settings/files/zzz-default-settings
@@ -13,34 +13,36 @@ fi
 echo "CONFIG_PACKAGE_bash=y" >> .config
 
 # OpenWrt官方HaProxy
-# svn co https://github.com/openwrt/packages/branches/openwrt-23.05/net/haproxy
-# rm -rf feeds/packages/net/haproxy
-# mv haproxy feeds/packages/net
+if [[ $WRT_URL == *"lede"* ]] ; then
+  svn co https://github.com/openwrt/packages/branches/openwrt-23.05/net/haproxy
+  rm -rf feeds/packages/net/haproxy
+  mv haproxy feeds/packages/net
+fi
 
 # 删除自带的passwall
-# rm -rf feeds/luci/applications/luci-app-passwall
+rm -rf feeds/luci/applications/luci-app-passwall
 # 删除自带的packages
-# rm -rf feeds/packages/net/hysteria
-# rm -rf feeds/packages/net/sing-box
-#用lede的ssrplus插件还是passwall插件，用ssrplus插件并且固件是lede的话，更新haproxy
+rm -rf feeds/packages/net/hysteria
+rm -rf feeds/packages/net/sing-box
+# 相关插件
 if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
-  #增加luci界面
+  # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y" >> .config
 fi
 if [[ $OPENWRT_APPLICATIONS == "passwall2" ]] ; then
-  #增加luci界面
+  # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall2=y" >> .config
 fi
 if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
-  # rm -rf feeds/luci/applications/luci-app-ssr-plus
-  #增加luci界面
+  rm -rf feeds/luci/applications/luci-app-ssr-plus
+  # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-ssr-plus=y" >> .config
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
 fi
-#openclash插件
+# dopenclash插件
 if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
-  # rm -rf feeds/luci/applications/luci-app-openclash
+  rm -rf feeds/luci/applications/luci-app-openclash
   #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 fi
