@@ -7,7 +7,7 @@ if [[ $WRT_URL == *"lede"* ]] ; then
 else
   sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" package/base-files/files/etc/openwrt_release
   sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $(date +%Y.%m.%d)'/g" package/base-files/files/etc/openwrt_release
-  sed -i "s/DISTRIB_ARCH='*.*'/DISTRIB_ARCH='x86_64'/g" package/base-files/files/etc/openwrt_release
+  sed -i "s/DISTRIB_ARCH='*.*'/DISTRIB_ARCH='amd64'/g" package/base-files/files/etc/openwrt_release
 fi
 
 # 安装bash
