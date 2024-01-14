@@ -3,10 +3,10 @@
 # 加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
 if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" package/lean/default-settings/files/zzz-default-settings
-  sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $(date +%Y.%m.%d)'/g" package/lean/default-settings/files/zzz-default-settings
+  sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" package/lean/default-settings/files/zzz-default-settings
 else
   sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" package/base-files/files/etc/openwrt_release
-  sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $(date +%Y.%m.%d)'/g" package/base-files/files/etc/openwrt_release
+  sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" package/base-files/files/etc/openwrt_release
   sed -i "s/DISTRIB_ARCH='*.*'/DISTRIB_ARCH='amd64'/g" package/base-files/files/etc/openwrt_release
 fi
 

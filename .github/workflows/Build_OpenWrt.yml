@@ -74,11 +74,11 @@ jobs:
     - name: Initialization Values
       run: |
         export WRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")
-        export WRT_REPO=$(basename $GITHUB_WORKSPACE)
+        export WRT_TIME=$(date +%Y.%m.%d)
         export WRT_SOURCE=$(echo $WRT_URL | cut -d '/' -f 5-)
         export WRT_TYPE=$(sed -n "1{s/^#//;s/\r$//;p;q}" $GITHUB_WORKSPACE/config/$WRT_TARGET.config)
         echo "WRT_DATE=$WRT_DATE" >> $GITHUB_ENV
-        echo "WRT_REPO=$WRT_REPO" >> $GITHUB_ENV
+        echo "WRT_TIME=$WRT_TIME" >> $GITHUB_ENV
         echo "WRT_SOURCE=$WRT_SOURCE" >> $GITHUB_ENV
         echo "WRT_TARGET=$WRT_TARGET" >> $GITHUB_ENV
         echo "WRT_DATE=$WRT_DATE" >> $GITHUB_ENV

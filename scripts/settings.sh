@@ -20,11 +20,11 @@ if [[ $WRT_URL == *"lede"* ]]; then
 	#修改默认时间格式
 	sed -i 's/os.date()/os.date("%Y-%m-%d %H:%M:%S %A")/g' $LEDE_FILE
 	#添加编译日期标识
-	sed -i "s/(\(<%=pcdata(ver.luciversion)%>\))/\1 \/ $WRT_REPO-$WRT_DATE/" $LEDE_FILE
+	sed -i "s/(\(<%=pcdata(ver.luciversion)%>\))/\1 \/ $WRT_SOURCE-$WRT_TIME/" $LEDE_FILE
 elif [[ $WRT_URL == *"immortalwrt"* ]] ; then
 	#添加编译日期标识
 	VER_FILE=$(find ./feeds/luci/modules/ -type f -name "10_system.js")
-	awk -v wrt_repo="ImmortalWrt" -v wrt_date="$(date +%Y.%m.%d)" '{ gsub(/(\(luciversion \|\| \047\047\))/, "& + (\047 / "wrt_repo"-"wrt_date"\047)") } 1' $VER_FILE > temp.js && mv -f temp.js $VER_FILE
+	awk -v wrt_repo="$WRT_SOURCE" -v wrt_date="$WRT_TIME" '{ gsub(/(\(luciversion \|\| \047\047\))/, "& + (\047 / "wrt_repo"-"wrt_date"\047)") } 1' $VER_FILE > temp.js && mv -f temp.js $VER_FILE
 fi
 
 #配置文件修改
