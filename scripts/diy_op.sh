@@ -43,12 +43,22 @@ if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-ssr-plus=y" >> .config
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
 fi
-# dopenclash插件
+# openclash插件
 if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
   rm -rf feeds/luci/applications/luci-app-openclash
   #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 fi
+
+# 哪吒agent
+git clone --depth=1 --single-branch https://github.com/Erope/openwrt_nezha.git
+echo "CONFIG_PACKAGE_luci-app-nezha-agent=y" >> .config
+echo "CONFIG_PACKAGE_nezha-agent=y" >> .config
+#Linkease
+git clone --depth=1 --single-branch https://github.com/linkease/istore.git
+git clone --depth=1 --single-branch https://github.com/linkease/nas-packages.git
+git clone --depth=1 --single-branch https://github.com/linkease/nas-packages-luci.git
+echo "CONFIG_PACKAGE_luci-app-istore=y" >> .config
 
 # BBR
 if [[ $WRT_URL == *"lede"* ]] ; then
