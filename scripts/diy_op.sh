@@ -50,17 +50,19 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 fi
 
-#Linkease
-# echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
+# iStore
+echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
+./scripts/feeds update istore
+./scripts/feeds install -d y -p istore luci-app-store
+echo "CONFIG_PACKAGE_luci-app-istore=y" >> .config
+# Linkease
 echo 'src-git nas https://github.com/linkease/nas-packages.git;master' >> feeds.conf.default
 echo 'src-git nas_luci https://github.com/linkease/nas-packages-luci.git;main' >> feeds.conf.default
 ./scripts/feeds update nas nas_luci
 ./scripts/feeds install -a -p nas
 ./scripts/feeds install -a -p nas_luci
-# ./scripts/feeds update istore
-# ./scripts/feeds install -d y -p istore luci-app-store
-# echo "CONFIG_PACKAGE_luci-app-istore=y" >> .config
-echo "CONFIG_PACKAGE_luci-app-linkease=y" >> .config
+echo "CONFIG_PACKAGE_luci-app-linkease=y" >> .config  # 易有云文件管理
+# echo "CONFIG_PACKAGE_luci-app-ddnsto=y" >> .config    # DDNSTO远程连接
 # 哪吒agent
 # echo 'src-git nezha https://github.com/Erope/openwrt_nezha;main' >> feeds.conf.default
 # ./scripts/feeds update nezha
