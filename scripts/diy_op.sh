@@ -50,15 +50,17 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 fi
 
-# 哪吒agent
-git clone --depth=1 --single-branch https://github.com/Erope/openwrt_nezha.git
-echo "CONFIG_PACKAGE_luci-app-nezha-agent=y" >> .config
-echo "CONFIG_PACKAGE_nezha-agent=y" >> .config
 #Linkease
-git clone --depth=1 --single-branch https://github.com/linkease/istore.git
-git clone --depth=1 --single-branch https://github.com/linkease/nas-packages.git
-git clone --depth=1 --single-branch https://github.com/linkease/nas-packages-luci.git
+echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
+./scripts/feeds update istore
+./scripts/feeds install -d y -p istore luci-app-store
 echo "CONFIG_PACKAGE_luci-app-istore=y" >> .config
+# 哪吒agent
+echo 'src-git nezha https://github.com/Erope/openwrt_nezha;main' >> feeds.conf.default
+./scripts/feeds update nezha
+./scripts/feeds install -d y -p nezha luci-app-nezha
+echo "CONFIG_PACKAGE_luci-app-nezha-agent=y" >> .config
+# echo "CONFIG_PACKAGE_nezha-agent=y" >> .config
 
 # BBR
 if [[ $WRT_URL == *"lede"* ]] ; then
