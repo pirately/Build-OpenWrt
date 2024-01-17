@@ -52,9 +52,11 @@ fi
 
 #Linkease
 # echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
-git clone --depth=1 --single-branch --branch "main" https://github.com/linkease/istore.git
-git clone --depth=1 --single-branch --branch "master" https://github.com/linkease/nas-packages.git
-git clone --depth=1 --single-branch --branch "main" https://github.com/linkease/nas-packages-luci.git
+echo 'src-git nas https://github.com/linkease/nas-packages.git;master' >> feeds.conf.default
+echo 'src-git nas_luci https://github.com/linkease/nas-packages-luci.git;main' >> feeds.conf.default
+./scripts/feeds update nas nas_luci
+./scripts/feeds install -a -p nas
+./scripts/feeds install -a -p nas_luci
 # ./scripts/feeds update istore
 # ./scripts/feeds install -d y -p istore luci-app-store
 # echo "CONFIG_PACKAGE_luci-app-istore=y" >> .config
