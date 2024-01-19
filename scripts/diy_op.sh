@@ -9,8 +9,9 @@ else
   sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" package/base-files/files/etc/openwrt_release
 fi
 
-# 安装bash
-echo "CONFIG_PACKAGE_bash=y" >> .config
+
+echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
+echo "CONFIG_PACKAGE_tailscale=y" >> .config  # 安装tailscale
 
 # OpenWrt官方HaProxy
 if [[ $WRT_URL == *"lede"* ]] ; then
