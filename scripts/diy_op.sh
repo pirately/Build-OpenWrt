@@ -11,7 +11,7 @@ fi
 
 
 echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
-# echo "CONFIG_PACKAGE_tailscale=y" >> .config  # 安装tailscale
+echo "CONFIG_PACKAGE_tailscale=y" >> .config  # 安装tailscale
 
 # OpenWrt官方HaProxy
 if [[ $WRT_URL == *"lede"* ]] ; then
