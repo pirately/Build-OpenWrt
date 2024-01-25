@@ -113,7 +113,8 @@ jobs:
         cp -f OpenWrt_Files/diy/banner openwrt/package/base-files/files/etc/banner
         sed -i "s/%D %V, %C/OpenWrt $(date +'%Y.%m.%d') by Jeffen/g" openwrt/package/base-files/files/etc/banner
         cp -f OpenWrt_Files/scripts/diy.sh $GITHUB_WORKSPACE/scripts
-        mv OpenWrt_Files/${{ env.OPENWRT_APPLICATIONS }}/* ./ && rm -rf OpenWrt_Files
+        cp -rf OpenWrt_Files/zerotier/* ./
+        cp -rf OpenWrt_Files/${{ env.OPENWRT_APPLICATIONS }}/* ./ && rm -rf OpenWrt_Files
         [ -e files ] && mv files openwrt/files
         cd openwrt
         rm -rf ./tmp* ./.config*
