@@ -88,10 +88,39 @@ jobs:
     - name: Clone OpenWrt Source Code
       run: |
         git clone --depth=1 --single-branch --branch $WRT_BRANCH $WRT_URL ./openwrt
+        cd ./openwrt/ && echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
 
     - name: Check Scripts
       run: |
         find ./ -maxdepth 2 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
+
+    - name: Check Caches
+      id: check-cache
+      uses: actions/cache@main
+      with:
+        key: ${{env.WRT_TARGET}}-${{env.WRT_SOURCE}}-${{env.WRT_HASH}}
+        path: |
+          ./openwrt/.ccache
+          ./openwrt/staging_dir/host*
+          ./openwrt/staging_dir/tool*
+
+    - name: Update Caches
+      run: |
+        if ${{steps.check-cache.outputs.cache-hit == 'true'}}; then
+          sed -i 's/ $(tool.*\/stamp-compile)//g' ./openwrt/Makefile
+          sed -i 's/ $(tool.*\/stamp-install)//g' ./openwrt/Makefile
+
+          echo "toolchain skiped done!"
+        else
+          gh extension install actions/gh-actions-cache
+
+          CACHE_LIST=$(gh actions-cache list --key "$WRT_TARGET-$WRT_SOURCE" | cut -f 1)
+          for CACHE_KEY in $CACHE_LIST; do
+             gh actions-cache delete $CACHE_KEY --confirm
+          done
+
+          echo "caches cleanup done!"
+        fi
 
     - name: Update Feeds
       run: |
@@ -113,7 +142,6 @@ jobs:
         cp -f OpenWrt_Files/diy/banner openwrt/package/base-files/files/etc/banner
         sed -i "s/%D %V, %C/OpenWrt $(date +'%Y.%m.%d') by Jeffen/g" openwrt/package/base-files/files/etc/banner
         cp -f OpenWrt_Files/scripts/diy.sh $GITHUB_WORKSPACE/scripts
-        cp -rf OpenWrt_Files/zerotier/* ./
         cp -rf OpenWrt_Files/${{ env.OPENWRT_APPLICATIONS }}/* ./ && rm -rf OpenWrt_Files
         [ -e files ] && mv files openwrt/files
         cd openwrt
@@ -133,14 +161,6 @@ jobs:
       run: |
         cd ./openwrt
         make download -j$(($(nproc)+1))
-
-    - name: Cache
-      uses: stupidloud/cachewrtbuild@main
-      with:
-        ccache: 'true'
-        mixkey: ${{ env.WRT_SOURCE }}
-        clean: ${{ contains(github.event.action, 'nocache') }}
-        prefix: ${{ github.workspace }}/openwrt
 
     - name: Check space usage
       if: (!cancelled())
