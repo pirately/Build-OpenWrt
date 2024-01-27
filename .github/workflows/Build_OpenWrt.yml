@@ -11,6 +11,7 @@ on:
   workflow_dispatch:
 
 env:
+  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
   REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
   SCKEY: ${{ secrets.SCKEY }}
   TZ: Asia/Shanghai
@@ -226,8 +227,8 @@ jobs:
     - name: Upload Release
       uses: softprops/action-gh-release@master
       if: env.UPLOAD_RELEASE == 'true' && steps.tag.outputs.status == 'success' && !cancelled()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # env:
+      #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ env.WRT_SOURCE }}_${{ env.WRT_TARGET }}_${{ env.WRT_DATE }}
         body_path: release.txt
@@ -252,5 +253,5 @@ jobs:
       with:
         keep_latest: 3
         delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # env:
+      #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
