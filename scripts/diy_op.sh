@@ -62,17 +62,17 @@ if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i '$i uci set network.lan.ifname="eth0"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci set network.lan.gateway="10.0.1.2"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci set network.lan.dns="223.5.5.5"' package/lean/default-settings/files/zzz-default-settings
-  sed -i '$i uci set network.@route[-1].interface="lan"' package/lean/default-settings/files/zzz-default-settings
-  sed -i '$i uci set network.@route[-1].target="10.8.1.0/24"' package/lean/default-settings/files/zzz-default-settings
-  sed -i '$i uci set network.@route[-1].gateway="10.0.1.18"' package/lean/default-settings/files/zzz-default-settings
+  sed -i '$i uci set network.@route[0].interface="lan"' package/lean/default-settings/files/zzz-default-settings
+  sed -i '$i uci set network.@route[0].target="10.8.1.0/24"' package/lean/default-settings/files/zzz-default-settings
+  sed -i '$i uci set network.@route[0].gateway="10.0.1.18"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci commit network' package/lean/default-settings/files/zzz-default-settings
 fi
 if [[ $WRT_SOURCE == "immortalwrt" ]]; then
   sed -i '$i uci set network.lan.ifname="eth0"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.lan.gateway="10.0.1.2"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.lan.dns="223.5.5.5"' package/emortal/default-settings/files/99-default-settings
-  sed -i '$i uci set network.@route[-1].interface="lan"' package/emortal/default-settings/files/99-default-settings
-  sed -i '$i uci set network.@route[-1].target="10.8.1.0/24"' package/emortal/default-settings/files/99-default-settings
-  sed -i '$i uci set network.@route[-1].gateway="10.0.1.18"' package/emortal/default-settings/files/99-default-settings
+  sed -i '$i uci set network.@route[0].interface="lan"' package/emortal/default-settings/files/99-default-settings
+  sed -i '$i uci set network.@route[0].target="10.8.1.0/24"' package/emortal/default-settings/files/99-default-settings
+  sed -i '$i uci set network.@route[0].gateway="10.0.1.18"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci commit network' package/emortal/default-settings/files/99-default-settings
 fi
