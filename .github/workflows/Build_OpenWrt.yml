@@ -11,7 +11,6 @@ on:
   workflow_dispatch:
 
 env:
-  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
   REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
   SCKEY: ${{ secrets.SCKEY }}
   TZ: Asia/Shanghai
@@ -89,39 +88,10 @@ jobs:
     - name: Clone OpenWrt Source Code
       run: |
         git clone --depth=1 --single-branch --branch $WRT_BRANCH $WRT_URL ./openwrt
-        cd ./openwrt/ && echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
 
     - name: Check Scripts
       run: |
         find ./ -maxdepth 2 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
-
-    - name: Check Caches
-      id: check-cache
-      uses: actions/cache@main
-      with:
-        key: ${{env.WRT_TARGET}}-${{env.WRT_SOURCE}}-${{env.WRT_HASH}}
-        path: |
-          ./openwrt/.ccache
-          ./openwrt/staging_dir/host*
-          ./openwrt/staging_dir/tool*
-
-    - name: Update Caches
-      run: |
-        if ${{steps.check-cache.outputs.cache-hit == 'true'}}; then
-          sed -i 's/ $(tool.*\/stamp-compile)//g' ./openwrt/Makefile
-          sed -i 's/ $(tool.*\/stamp-install)//g' ./openwrt/Makefile
-
-          echo "toolchain skiped done!"
-        else
-          gh extension install actions/gh-actions-cache
-
-          CACHE_LIST=$(gh actions-cache list --key "$WRT_TARGET-$WRT_SOURCE" | cut -f 1)
-          for CACHE_KEY in $CACHE_LIST; do
-             gh actions-cache delete $CACHE_KEY --confirm
-          done
-
-          echo "caches cleanup done!"
-        fi
 
     - name: Update Feeds
       run: |
@@ -162,6 +132,14 @@ jobs:
       run: |
         cd ./openwrt
         make download -j$(($(nproc)+1))
+
+    - name: Cache
+      uses: pirately/cachewrtbuild@main
+      with:
+        ccache: 'true'
+        mixkey: ${{ env.WRT_SOURCE }}
+        clean: ${{ contains(github.event.action, 'nocache') }}
+        prefix: ${{ github.workspace }}/openwrt
 
     - name: Check space usage
       if: (!cancelled())
@@ -227,8 +205,8 @@ jobs:
     - name: Upload Release
       uses: softprops/action-gh-release@master
       if: env.UPLOAD_RELEASE == 'true' && steps.tag.outputs.status == 'success' && !cancelled()
-      # env:
-      #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ env.WRT_SOURCE }}_${{ env.WRT_TARGET }}_${{ env.WRT_DATE }}
         body_path: release.txt
@@ -253,5 +231,5 @@ jobs:
       with:
         keep_latest: 3
         delete_tags: true
-      # env:
-      #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
