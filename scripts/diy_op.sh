@@ -73,6 +73,6 @@ if [[ $WRT_SOURCE == "immortalwrt" ]]; then
   sed -i '$i uci set network.lan.dns="223.5.5.5"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.route.interface="lan"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.route.target="10.8.1.0/24"' package/emortal/default-settings/files/99-default-settings
-  sed -i '$i uci set network.route[0].gateway="10.0.1.18"' package/emortal/default-settings/files/99-default-settings
+  sed -i '$i uci set network.route.gateway="10.0.1.18"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci commit network' package/emortal/default-settings/files/99-default-settings
 fi
