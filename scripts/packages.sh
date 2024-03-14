@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# 删除自带的packages
-rm -rf feeds/packages/net/xray-core
-rm -rf feeds/packages/net/xray-plugin
-rm -rf feeds/packages/net/hysteria
-rm -rf feeds/packages/net/sing-box
-
 #更新软件包
 UPDATE_PACKAGE() {
 	local PKG_NAME=$1
