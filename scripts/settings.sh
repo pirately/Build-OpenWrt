@@ -17,7 +17,7 @@ if [[ $WRT_URL == *"lede"* ]]; then
 	#修改默认时间格式
 	sed -i 's/os.date()/os.date("%Y-%m-%d %H:%M:%S %A")/g' $LEDE_FILE
 	#添加编译日期标识
-	sed -i "s/(\(<%=pcdata(ver.luciversion)%>\))/\1 \/ $WRT_SOURCE-$WRT_TIME/" $LEDE_FILE
+	sed -i "s/(\(<%=pcdata(ver.luciversion)%>\))/\1 \/ $WRT_SOURCE-$WRT_TIME/g" $LEDE_FILE
 	#修改默认WIFI名
 	sed -i "s/ssid=.*/ssid=$WRT_WIFI/g" ./package/kernel/mac80211/files/lib/wifi/mac80211.sh
 else
@@ -26,8 +26,6 @@ else
 	#修改immortalwrt.lan关联IP
 	sed -i "s/192\.168\.[0-9]*\.[0-9]*/$WRT_IP/g" $(find ./feeds/luci/modules/luci-mod-system/ -type f -name "flash.js")
 	#添加编译日期标识
-	# VER_FILE=$(find ./feeds/luci/modules/ -type f -name "10_system.js")
-	# awk -v wrt_repo="$WRT_SOURCE" -v wrt_date="$WRT_TIME" '{ gsub(/(\(luciversion \|\| \047\047\))/, "& + (\047 / "wrt_repo"-"wrt_date"\047)") } 1' $VER_FILE > temp.js && mv -f temp.js $VER_FILE
 	sed -i "s/(\(luciversion || ''\))/(\1) + (' \/ $WRT_SOURCE-$WRT_TIME')/g" $(find ./feeds/luci/modules/luci-mod-status/ -type f -name "10_system.js")
 fi
 
