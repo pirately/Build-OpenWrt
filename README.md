@@ -24,7 +24,6 @@ scripts——自定义脚本
 
 settings——设置文件
 
-- depends-ubuntu——环境依赖列表
 - settings.ini——设置源码以及分支等
 
 ### 使用方法：
