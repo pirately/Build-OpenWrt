@@ -36,6 +36,8 @@ UPDATE_PACKAGE "ssr-plus" "fw876/helloworld" "master"
 UPDATE_PACKAGE "luci-app-gecoosac" "lwb1978/openwrt-gecoosac" "main"
 UPDATE_PACKAGE "easytier" "lazyoop/networking-artifact" "main" "pkg"
 UPDATE_PACKAGE "vnt" "lazyoop/networking-artifact" "main" "pkg"
+UPDATE_PACKAGE "luci-app-easytier" "EasyTier/luci-app-easytier" "main"
+UPDATE_PACKAGE "luci-app-vnt" "lmq8267/luci-app-vnt" "main"
 
 if [[ $WRT_URL != *"lede"* ]]; then
 	UPDATE_PACKAGE "homeproxy" "VIKINGYFY/homeproxy" "dev"

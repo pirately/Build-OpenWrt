@@ -51,6 +51,10 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 fi
 
+# EasyTier, VNT
+echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config
+echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config
+
 # BBR
 if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i "s/option bbr_cca '0'/option bbr_cca '1'/g" feeds/luci/applications/luci-app-turboacc/root/etc/config/turboacc
