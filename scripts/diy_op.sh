@@ -52,8 +52,8 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
 fi
 
 # EasyTier, VNT
-echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config
-echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config
+# echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config
+# echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config
 
 # BBR
 if [[ $WRT_URL == *"lede"* ]] ; then
