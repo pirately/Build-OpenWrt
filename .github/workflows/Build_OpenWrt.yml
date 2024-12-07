@@ -58,6 +58,7 @@ jobs:
     - name: Free Disk Space
       uses: endersonmenezes/free-disk-space@main
       with:
+        testing: false
         remove_android: true
         remove_dotnet: true
         remove_haskell: true
@@ -72,7 +73,6 @@ jobs:
           /usr/local/share/vcpkg/ports/llvm* /usr/local/share/vcpkg/ports/mysql* /usr/local/share/vcpkg/ports/snap* \
           /usr/share/azure* /usr/share/dotnet* /usr/share/glade* /usr/share/miniconda* /usr/share/php* /usr/share/swift \
           /var/lib/mysql* /var/log/azure*"
-        testing: false
 
     - name: Initialization Environment
       env:
@@ -139,7 +139,7 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/scripts/settings.sh && $GITHUB_WORKSPACE/scripts/settings.sh
         chmod +x $GITHUB_WORKSPACE/scripts/diy.sh && $GITHUB_WORKSPACE/scripts/diy.sh
         chmod +x $GITHUB_WORKSPACE/scripts/diy_op.sh && $GITHUB_WORKSPACE/scripts/diy_op.sh
-        make defconfig
+        make defconfig -j$(($(nproc)+1))
 
     - name: Cleanup Toolchain
       run: |
