@@ -15,7 +15,8 @@ echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
 # echo "CONFIG_PACKAGE_luci-app-zerotier=y" >> .config  # 安装zerotier
 # echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config  # EasyTier
 # echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config # VNT
-echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> ./.config # 安装homeproxy
+# echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> ./.config # 安装homeproxy
+# echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config # 安装mihomotproxy
 
 # OpenWrt官方HaProxy
 if [[ $WRT_URL == *"lede"* ]] ; then
@@ -27,7 +28,7 @@ fi
 # 删除自带的passwall
 rm -rf feeds/luci/applications/luci-app-passwall
 # 删除自带的packages
-# rm -rf feeds/packages/net/xray-core
+rm -rf feeds/packages/net/xray-core
 rm -rf feeds/packages/net/xray-plugin
 rm -rf feeds/packages/net/hysteria
 rm -rf feeds/packages/net/sing-box
