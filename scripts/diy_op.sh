@@ -13,6 +13,9 @@ fi
 echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
 # echo "CONFIG_PACKAGE_tailscale=y" >> .config  # 安装tailscale
 # echo "CONFIG_PACKAGE_luci-app-zerotier=y" >> .config  # 安装zerotier
+# echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config  # EasyTier
+# echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config # VNT
+echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> ./.config # 安装homeproxy
 
 # OpenWrt官方HaProxy
 if [[ $WRT_URL == *"lede"* ]] ; then
@@ -50,13 +53,6 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
   #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 fi
-
-# EasyTier, VNT
-# echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config
-# echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config
-
-# homeproxy
-echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> ./.config
 
 # BBR
 if [[ $WRT_URL == *"lede"* ]] ; then
