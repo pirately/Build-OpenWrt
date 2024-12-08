@@ -16,7 +16,7 @@ echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
 # echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config  # EasyTier
 # echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config # VNT
 # echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> ./.config # 安装homeproxy
-# echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config # 安装mihomotproxy
+echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config # 安装mihomotproxy
 
 # OpenWrt官方HaProxy
 if [[ $WRT_URL == *"lede"* ]] ; then
