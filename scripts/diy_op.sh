@@ -58,6 +58,13 @@ if [[ $OPENWRT_APPLICATIONS == "mihomo" ]] ; then
   rm -rf feeds/luci/applications/luci-app-mihomo
   #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
+  if [[ $WRT_URL == *"lede"* ]] ; then
+    sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/lean/default-settings/files/zzz-default-settings
+    sed -i '$i uci commit dhcp' package/lean/default-settings/files/zzz-default-settings
+  elif [[ $WRT_SOURCE == "immortalwrt" ]]; then
+    sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/emortal/default-settings/files/99-default-settings
+    sed -i '$i uci commit dhcp' package/emortal/default-settings/files/99-default-settings
+  fi
 fi
 
 # BBR
@@ -76,8 +83,6 @@ if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i '$i uci set network.@route[-1].target="10.8.1.0/24"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci set network.@route[-1].gateway="10.0.1.18"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci commit network' package/lean/default-settings/files/zzz-default-settings
-  sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/lean/default-settings/files/zzz-default-settings
-  sed -i '$i uci commit dhcp' package/lean/default-settings/files/zzz-default-settings
 fi
 if [[ $WRT_SOURCE == "immortalwrt" ]]; then
   sed -i '$i uci set network.lan.ifname="eth0"' package/emortal/default-settings/files/99-default-settings
@@ -88,6 +93,4 @@ if [[ $WRT_SOURCE == "immortalwrt" ]]; then
   sed -i '$i uci set network.@route[-1].target="10.8.1.0/24"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.@route[-1].gateway="10.0.1.18"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci commit network' package/emortal/default-settings/files/99-default-settings
-  sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/emortal/default-settings/files/99-default-settings
-  sed -i '$i uci commit dhcp' package/emortal/default-settings/files/99-default-settings
 fi
