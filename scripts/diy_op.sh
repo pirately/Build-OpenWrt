@@ -16,7 +16,6 @@ echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
 # echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config  # EasyTier
 # echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config # VNT
 # echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> ./.config # 安装homeproxy
-# echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config # 安装mihomotproxy
 
 # OpenWrt官方HaProxy
 if [[ $WRT_URL == *"lede"* ]] ; then
@@ -54,6 +53,12 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
   #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 fi
+# mihomo插件
+if [[ $OPENWRT_APPLICATIONS == "mihomo" ]] ; then
+  rm -rf feeds/luci/applications/luci-app-mihomo
+  #增加luci界面
+  echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
+fi
 
 # BBR
 if [[ $WRT_URL == *"lede"* ]] ; then
@@ -71,6 +76,8 @@ if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i '$i uci set network.@route[-1].target="10.8.1.0/24"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci set network.@route[-1].gateway="10.0.1.18"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci commit network' package/lean/default-settings/files/zzz-default-settings
+  sed -i '$i uci set dhcp.dnsmasq.dns_redirect="0"' package/lean/default-settings/files/zzz-default-settings
+  sed -i '$i uci commit dhcp' package/lean/default-settings/files/zzz-default-settings
 fi
 if [[ $WRT_SOURCE == "immortalwrt" ]]; then
   sed -i '$i uci set network.lan.ifname="eth0"' package/emortal/default-settings/files/99-default-settings
@@ -81,4 +88,6 @@ if [[ $WRT_SOURCE == "immortalwrt" ]]; then
   sed -i '$i uci set network.@route[-1].target="10.8.1.0/24"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.@route[-1].gateway="10.0.1.18"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci commit network' package/emortal/default-settings/files/99-default-settings
+  sed -i '$i uci set dhcp.dnsmasq.dns_redirect="0"' package/emortal/default-settings/files/99-default-settings
+  sed -i '$i uci commit dhcp' package/emortal/default-settings/files/99-default-settings
 fi
