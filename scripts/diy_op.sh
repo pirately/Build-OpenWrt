@@ -9,6 +9,7 @@ else
   sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" package/base-files/files/etc/openwrt_release
 fi
 
+PKG_PATCH="$GITHUB_WORKSPACE/openwrt/package/"
 
 echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
 # echo "CONFIG_PACKAGE_tailscale=y" >> .config  # 安装tailscale
@@ -54,11 +55,11 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
   #预置OpenClash内核和数据
   if [ -d *"openclash"* ]; then
-    CORE_VER="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version"
-    CORE_TYPE=$(echo $WRT_TARGET | grep -Eiq "64|86" && echo "amd64" || echo "arm64")
-    CORE_TUN_VER=$(curl -sL $CORE_VER | sed -n "2{s/\r$//;p;q}")
+    # CORE_VER="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version"
+    # CORE_TYPE=$(echo $WRT_TARGET | grep -Eiq "64|86" && echo "amd64" || echo "arm64")
+    # CORE_TUN_VER=$(curl -sL $CORE_VER | sed -n "2{s/\r$//;p;q}")
 
-    CORE_META="https://github.com/vernesong/OpenClash/raw/core/master/meta/clash-linux-$CORE_TYPE.tar.gz"
+    CORE_META="https://github.com/vernesong/OpenClash/raw/core/master/meta/clash-linux-amd64.tar.gz"
 
     GEO_MMDB="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb"
     GEO_SITE="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
