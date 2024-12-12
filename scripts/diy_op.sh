@@ -9,7 +9,6 @@ else
   sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" package/base-files/files/etc/openwrt_release
 fi
 
-PKG_PATCH="$GITHUB_WORKSPACE/openwrt/package/"
 
 echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
 # echo "CONFIG_PACKAGE_tailscale=y" >> .config  # 安装tailscale
@@ -54,33 +53,6 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
   #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
   #预置OpenClash内核和数据
-  if [ -d *"openclash"* ]; then
-    # CORE_VER="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version"
-    # CORE_TYPE=$(echo $WRT_TARGET | grep -Eiq "64|86" && echo "amd64" || echo "arm64")
-    # CORE_TUN_VER=$(curl -sL $CORE_VER | sed -n "2{s/\r$//;p;q}")
-
-    CORE_META="https://github.com/vernesong/OpenClash/raw/core/master/meta/clash-linux-amd64.tar.gz"
-
-    GEO_MMDB="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb"
-    GEO_SITE="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
-    GEO_IP="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
-    GEO_ASN="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
-
-    cd ./luci-app-openclash/root/etc/openclash/
-
-    curl -sL -o country.mmdb $GEO_MMDB && echo "Country.mmdb done!"
-    curl -sL -o geosite.dat $GEO_SITE && echo "GeoSite.dat done!"
-    curl -sL -o geoip.dat $GEO_IP && echo "GeoIP.dat done!"
-    curl -sL -o GeoLite2-ASN.mmdb $GEO_ASN && echo "GeoAsn.mmdb done!"
-
-    mkdir ./core/ && cd ./core/
-
-    curl -sL -o meta.tar.gz $CORE_META && tar -zxf meta.tar.gz && mv -f clash clash_meta && echo "meta done!"
-
-    chmod +x ./* && rm -rf ./*.gz
-
-    cd $PKG_PATCH && echo "openclash date has been updated!"
-  fi
   if [[ $WRT_URL == *"lede"* ]] ; then
     sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/lean/default-settings/files/zzz-default-settings
     sed -i '$i uci commit dhcp' package/lean/default-settings/files/zzz-default-settings
