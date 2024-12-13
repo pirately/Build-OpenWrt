@@ -78,12 +78,3 @@ if [ -d *"openclash"* ]; then
 
 	cd $PKG_PATCH && echo "openclash date has been updated!"
 fi
-# 安装mihomo的ui
-if [ -d *"mihomo"* ]; then
-	UI_META="https://ghp.ci/https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip"
-	cd ./luci-app-mihomo/root/etc/mihomo/
-	mkdir -p ./run/ui/ && cd ./run/ui/
-	curl -sL -o ui.zip $UI_META && unzip -oq ui.zip && mv -f metacubexd-gh-pages metacubexd && echo "ui download!"
-	chmod +x ./* && rm -rf ./*.zip
-	cd $PKG_PATCH && echo "mihomo ui has been updated!"
-fi
