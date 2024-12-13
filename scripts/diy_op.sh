@@ -47,26 +47,19 @@ if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-ssr-plus=y" >> .config
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
 fi
-# openclash插件
-if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
-  rm -rf feeds/luci/applications/luci-app-openclash
-  #增加luci界面
-  echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
-  #预置OpenClash内核和数据
-  if [[ $WRT_URL == *"lede"* ]] ; then
-    sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/lean/default-settings/files/zzz-default-settings
-    sed -i '$i uci commit dhcp' package/lean/default-settings/files/zzz-default-settings
-  elif [[ $WRT_SOURCE == "immortalwrt" ]]; then
-    sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/emortal/default-settings/files/99-default-settings
-    sed -i '$i uci commit dhcp' package/emortal/default-settings/files/99-default-settings
+# openclash或mihomo插件
+if [[ $OPENWRT_APPLICATIONS == "openclash" || $OPENWRT_APPLICATIONS == "mihomo" ]]; then
+  # 根据插件类型执行不同的操作
+  if [[ $OPENWRT_APPLICATIONS == "openclash" ]]; then
+    rm -rf feeds/luci/applications/luci-app-openclash
+    echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+  elif [[ $OPENWRT_APPLICATIONS == "mihomo" ]]; then
+    rm -rf feeds/luci/applications/luci-app-mihomo
+    echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
   fi
-fi
-# mihomo插件
-if [[ $OPENWRT_APPLICATIONS == "mihomo" ]] ; then
-  rm -rf feeds/luci/applications/luci-app-mihomo
-  #增加luci界面
-  echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
-  if [[ $WRT_URL == *"lede"* ]] ; then
+
+  # 处理 DNS 设置
+  if [[ $WRT_URL == *"lede"* ]]; then
     sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/lean/default-settings/files/zzz-default-settings
     sed -i '$i uci commit dhcp' package/lean/default-settings/files/zzz-default-settings
   elif [[ $WRT_SOURCE == "immortalwrt" ]]; then
