@@ -63,6 +63,7 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" ]]; then
   echo '  if ! grep -q "option enable '\''1'\''" /etc/config/openclash; then' >> $SH_PACH/openclash.sh
   echo '    sed -i "s/option enable '\''0'\''/option enable '\''1'\''/g" /etc/config/openclash && reboot' >> $SH_PACH/openclash.sh
   echo '    rm -f /etc/init.d/openclash.sh' >> $SH_PACH/openclash.sh
+  echo '  fi' >> $SH_PACH/openclash.sh 
   echo '}' >> $SH_PACH/openclash.sh
   chmod +x $SH_PACH/openclash.sh
 
