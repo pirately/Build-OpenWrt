@@ -47,17 +47,24 @@ if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-ssr-plus=y" >> .config
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
 fi
-# openclash或mihomo插件
-if [[ $OPENWRT_APPLICATIONS == "openclash" || $OPENWRT_APPLICATIONS == "mihomo" ]]; then
-  # 根据插件类型执行不同的操作
-  if [[ $OPENWRT_APPLICATIONS == "openclash" ]]; then
-    rm -rf feeds/luci/applications/luci-app-openclash
-    echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
-    chmod +x $GITHUB_WORKSPACE/openwrt/files/etc/openclash/openclash.sh
-  elif [[ $OPENWRT_APPLICATIONS == "mihomo" ]]; then
-    rm -rf feeds/luci/applications/luci-app-mihomo
-    echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
-  fi
+# openclash插件
+if [[ $OPENWRT_APPLICATIONS == "openclash" ]]; then
+  rm -rf feeds/luci/applications/luci-app-openclash
+  echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+
+  # 设置openclash启动，否则第一次运行需要手动点
+  SH_PACH="$GITHUB_WORKSPACE/openwrt/files/etc/init.d"
+  mkdir -p $SH_PACH
+  echo '#!/bin/sh /etc/rc.common' > $SH_PACH/openclash.sh
+  echo '# Copyright (C) 2024 OpenWRT' >> $SH_PACH/openclash.sh
+  echo -e '# This script will enable OpenClash and reboot the device\n' >> $SH_PACH/openclash.sh
+  echo 'START=99' >> $SH_PACH/openclash.sh
+  echo 'start() {' >> $SH_PACH/openclash.sh
+  echo '  if ! grep -q "option enable '\''1'\''" /etc/config/openclash; then' >> $SH_PACH/openclash.sh
+  echo '    sed -i "s/option enable '\''0'\''/option enable '\''1'\''/g" /etc/config/openclash && reboot' >> $SH_PACH/openclash.sh
+  echo '    rm -f /etc/init.d/openclash.sh' >> $SH_PACH/openclash.sh
+  echo '}' >> $SH_PACH/openclash.sh
+  chmod +x $SH_PACH/openclash.sh
 
   # 处理 DNS 设置
   if [[ $WRT_URL == *"lede"* ]]; then
