@@ -53,7 +53,7 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" || $OPENWRT_APPLICATIONS == "mihomo" 
   if [[ $OPENWRT_APPLICATIONS == "openclash" ]]; then
     rm -rf feeds/luci/applications/luci-app-openclash
     echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
-    chmod +x openwrt/files/etc/openclash/openclash.sh
+    chmod +x $GITHUB_WORKSPACE/openwrt/files/etc/openclash/openclash.sh
   elif [[ $OPENWRT_APPLICATIONS == "mihomo" ]]; then
     rm -rf feeds/luci/applications/luci-app-mihomo
     echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
