@@ -16,7 +16,6 @@ echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
 # echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config  # EasyTier
 # echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config # VNT
 # echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> ./.config # 安装homeproxy
-# echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config # 安装mihomotproxy
 
 # OpenWrt官方HaProxy
 if [[ $WRT_URL == *"lede"* ]] ; then
@@ -28,15 +27,17 @@ fi
 # 删除自带的passwall
 rm -rf feeds/luci/applications/luci-app-passwall
 # 删除自带的packages
-rm -rf feeds/packages/net/xray-core
+# rm -rf feeds/packages/net/xray-core
 rm -rf feeds/packages/net/xray-plugin
 rm -rf feeds/packages/net/hysteria
 rm -rf feeds/packages/net/sing-box
+
 # 相关插件
 if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
+  rm -rf feeds/packages/net/chinadns-ng
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
-  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y" >> .config
+  # echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y" >> .config
 fi
 if [[ $OPENWRT_APPLICATIONS == "passwall2" ]] ; then
   # 增加luci界面
@@ -49,10 +50,33 @@ if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
 fi
 # openclash插件
-if [[ $OPENWRT_APPLICATIONS == "openclash" ]] ; then
+if [[ $OPENWRT_APPLICATIONS == "openclash" ]]; then
   rm -rf feeds/luci/applications/luci-app-openclash
-  #增加luci界面
   echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+
+  # 设置openclash启动，否则第一次运行需要手动点
+  SH_PACH="$GITHUB_WORKSPACE/openwrt/files/etc/init.d"
+  mkdir -p $SH_PACH
+  echo '#!/bin/sh /etc/rc.common' > $SH_PACH/openclash.sh
+  echo '# Copyright (C) 2024 OpenWRT' >> $SH_PACH/openclash.sh
+  echo -e '# This script will enable OpenClash and reboot the device\n' >> $SH_PACH/openclash.sh
+  echo 'START=99' >> $SH_PACH/openclash.sh
+  echo 'start() {' >> $SH_PACH/openclash.sh
+  echo '  if ! grep -q "option enable '\''1'\''" /etc/config/openclash; then' >> $SH_PACH/openclash.sh
+  echo '    sed -i "s/option enable '\''0'\''/option enable '\''1'\''/g" /etc/config/openclash && reboot' >> $SH_PACH/openclash.sh
+  echo '    rm -f /etc/init.d/openclash.sh' >> $SH_PACH/openclash.sh
+  echo '  fi' >> $SH_PACH/openclash.sh 
+  echo '}' >> $SH_PACH/openclash.sh
+  chmod +x $SH_PACH/openclash.sh
+
+  # 处理 DNS 设置
+  if [[ $WRT_URL == *"lede"* ]]; then
+    sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/lean/default-settings/files/zzz-default-settings
+    sed -i '$i uci commit dhcp' package/lean/default-settings/files/zzz-default-settings
+  elif [[ $WRT_SOURCE == "immortalwrt" ]]; then
+    sed -i '$i uci set dhcp.@dnsmasq[0].dns_redirect="0"' package/emortal/default-settings/files/99-default-settings
+    sed -i '$i uci commit dhcp' package/emortal/default-settings/files/99-default-settings
+  fi
 fi
 
 # BBR
