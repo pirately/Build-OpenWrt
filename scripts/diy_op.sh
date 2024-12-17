@@ -25,6 +25,8 @@ if [[ $WRT_URL == *"lede"* ]] ; then
 fi
 
 # 删除自带的packages
+rm -rf feeds/luci/applications/luci-app-passwall
+rm -rf feeds/packages/net/chinadns-ng
 rm -rf feeds/packages/net/xray-core
 rm -rf feeds/packages/net/xray-plugin
 rm -rf feeds/packages/net/hysteria
@@ -32,8 +34,6 @@ rm -rf feeds/packages/net/sing-box
 
 # 相关插件
 if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
-  rm -rf feeds/luci/applications/luci-app-passwall
-  rm -rf feeds/packages/net/chinadns-ng
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
   # echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y" >> .config
