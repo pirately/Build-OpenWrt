@@ -49,32 +49,3 @@ if [ -f "$TS_FILE" ]; then
 
 	cd $PKG_PATCH && echo "tailscale has been fixed!"
 fi
-
-# 安装openclash内核
-if [ -d *"openclash"* ]; then
-	# CORE_VER="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version"
-	# CORE_TYPE=$(echo $WRT_TARGET | grep -Eiq "64|86" && echo "amd64" || echo "arm64")
-	# CORE_TUN_VER=$(curl -sL $CORE_VER | sed -n "2{s/\r$//;p;q}")
-
-	CORE_META="https://github.com/vernesong/OpenClash/raw/core/master/meta/clash-linux-amd64.tar.gz"
-
-	GEO_MMDB="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb"
-	GEO_SITE="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
-	GEO_IP="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
-	GEO_ASN="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
-
-	cd ./luci-app-openclash/root/etc/openclash/
-
-	curl -sL -o country.mmdb $GEO_MMDB && echo "Country.mmdb done!"
-	curl -sL -o geosite.dat $GEO_SITE && echo "GeoSite.dat done!"
-	curl -sL -o geoip.dat $GEO_IP && echo "GeoIP.dat done!"
-	curl -sL -o GeoLite2-ASN.mmdb $GEO_ASN && echo "GeoAsn.mmdb done!"
-
-	mkdir ./core/ && cd ./core/
-
-	curl -sL -o meta.tar.gz $CORE_META && tar -zxf meta.tar.gz && mv -f clash clash_meta && echo "meta done!"
-
-	chmod +x ./* && rm -rf ./*.gz
-
-	cd $PKG_PATCH && echo "openclash date has been updated!"
-fi
