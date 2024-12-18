@@ -78,7 +78,7 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        docker image prune --filter="dangling=true" -f
+        # docker rmi $(docker images -q)
         sudo -E apt -yqq update
         sudo -E apt -yqq full-upgrade
         sudo -E apt -yqq autoremove --purge
