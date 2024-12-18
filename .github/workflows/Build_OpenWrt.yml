@@ -110,7 +110,8 @@ jobs:
 
     - name: Check Scripts
       run: |
-        find ./ -maxdepth 3 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
+        # find ./ -maxdepth 3 -type f -iregex ".*\(config\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
+        find ./ -maxdepth 3 -type f -iregex ".*\(config\|sh\)$" -exec sed -i 's/\r//' {} \; -exec chmod +x {} \;
 
     - name: Update Feeds
       run: |
