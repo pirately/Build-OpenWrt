@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout Projects
@@ -86,7 +86,7 @@ jobs:
         sudo -E apt -yqq autoclean
         sudo -E apt -yqq clean
         # sudo -E apt -yqq install dos2unix libfuse-dev
-        sudo -E apt -yqq install libncurses-dev
+        # sudo -E apt -yqq install libncurses-dev
         sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)'
         sudo -E systemctl daemon-reload
         sudo -E timedatectl set-timezone "Asia/Shanghai"
