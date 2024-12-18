@@ -78,7 +78,7 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        docker rmi $(docker images -aq --filter dangling=true)
+        docker rmi $(docker images -a | grep "^<none>" | awk '{print $3}')
         sudo -E apt -yqq update
         sudo -E apt -yqq full-upgrade
         sudo -E apt -yqq autoremove --purge
