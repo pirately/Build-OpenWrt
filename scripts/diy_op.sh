@@ -27,7 +27,7 @@ fi
 # 删除自带的packages
 # rm -rf feeds/luci/applications/luci-app-passwall
 rm -rf feeds/packages/net/chinadns-ng
-rm -rf feeds/packages/net/xray-core
+# rm -rf feeds/packages/net/xray-core
 # rm -rf feeds/packages/net/xray-plugin
 # rm -rf feeds/packages/net/hysteria
 # rm -rf feeds/packages/net/sing-box
