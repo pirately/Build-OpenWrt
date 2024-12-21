@@ -25,18 +25,13 @@ if [[ $WRT_URL == *"lede"* ]] ; then
 fi
 
 # 删除自带的packages
-# rm -rf feeds/luci/applications/luci-app-passwall
-rm -rf feeds/packages/net/chinadns-ng
-# rm -rf feeds/packages/net/xray-core
-# rm -rf feeds/packages/net/xray-plugin
+# rm -rf feeds/packages/net/chinadns-ng
 # rm -rf feeds/packages/net/hysteria
-# rm -rf feeds/packages/net/sing-box
 
 # 相关插件
 if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
-  # echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y" >> .config
 fi
 if [[ $OPENWRT_APPLICATIONS == "passwall2" ]] ; then
   # 增加luci界面
@@ -89,7 +84,6 @@ fi
 # 配置网络环境
 # 旁路由
 if [[ $WRT_URL == *"lede"* ]] ; then
-  sed -i '$i uci set network.lan.ifname="eth0"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci set network.lan.gateway="10.0.1.2"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci set network.lan.dns="223.5.5.5"' package/lean/default-settings/files/zzz-default-settings
   sed -i '$i uci add network route' package/lean/default-settings/files/zzz-default-settings
@@ -99,7 +93,6 @@ if [[ $WRT_URL == *"lede"* ]] ; then
   sed -i '$i uci commit network' package/lean/default-settings/files/zzz-default-settings
 fi
 if [[ $WRT_SOURCE == "immortalwrt" ]]; then
-  sed -i '$i uci set network.lan.ifname="eth0"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.lan.gateway="10.0.1.2"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci set network.lan.dns="223.5.5.5"' package/emortal/default-settings/files/99-default-settings
   sed -i '$i uci add network route' package/emortal/default-settings/files/99-default-settings

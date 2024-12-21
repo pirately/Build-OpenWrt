@@ -139,8 +139,8 @@ jobs:
         rm -rf ./tmp* ./.config*
         cat $GITHUB_WORKSPACE/config/$WRT_TARGET.config $GITHUB_WORKSPACE/config/general.config >> .config
         chmod +x $GITHUB_WORKSPACE/scripts/settings.sh && $GITHUB_WORKSPACE/scripts/settings.sh
-        chmod +x $GITHUB_WORKSPACE/scripts/diy.sh && $GITHUB_WORKSPACE/scripts/diy.sh
         chmod +x $GITHUB_WORKSPACE/scripts/diy_op.sh && $GITHUB_WORKSPACE/scripts/diy_op.sh
+        chmod +x $GITHUB_WORKSPACE/scripts/diy.sh && $GITHUB_WORKSPACE/scripts/diy.sh
         make defconfig -j$(($(nproc)+1))
 
     - name: Cleanup Toolchain
