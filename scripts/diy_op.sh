@@ -25,7 +25,7 @@ if [[ $WRT_URL == *"lede"* ]] ; then
 fi
 
 # 删除自带的packages
-# rm -rf feeds/packages/net/chinadns-ng
+rm -rf feeds/packages/net/chinadns-ng
 # rm -rf feeds/packages/net/hysteria
 
 # 相关插件
