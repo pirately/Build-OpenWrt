@@ -17,7 +17,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout Projects
@@ -49,7 +49,6 @@ jobs:
         echo "WRT_TARGET=${WRT_TARGET}" >> $GITHUB_ENV
         echo "WRT_THEME=${WRT_THEME}" >> $GITHUB_ENV
         echo "WRT_NAME=${WRT_NAME}" >> $GITHUB_ENV
-        echo "WRT_IP=${WRT_IP}" >> $GITHUB_ENV
         echo "OPENWRT_APPLICATIONS=${OPENWRT_APPLICATIONS}" >> $GITHUB_ENV
         echo "UPLOAD_FIRMWARE=${UPLOAD_FIRMWARE}" >> $GITHUB_ENV        
         echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
@@ -85,8 +84,7 @@ jobs:
         sudo -E apt -yqq autoremove --purge
         sudo -E apt -yqq autoclean
         sudo -E apt -yqq clean
-        # sudo -E apt -yqq install dos2unix libfuse-dev
-        sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+        sudo -E apt -yqq install $(sed -n "1{s/\r$//g;p;q}" $GITHUB_WORKSPACE/settings/depends-ubuntu)
         sudo -E systemctl daemon-reload
         sudo -E timedatectl set-timezone "Asia/Shanghai"
 
@@ -102,7 +100,6 @@ jobs:
         echo "WRT_TARGET=$WRT_TARGET" >> $GITHUB_ENV
         echo "WRT_DATE=$WRT_DATE" >> $GITHUB_ENV
         echo "WRT_TYPE=$WRT_TYPE" >> $GITHUB_ENV
-        echo "WRT_IP=$WRT_IP" >> $GITHUB_ENV
 
     - name: Clone OpenWrt Source Code
       run: |

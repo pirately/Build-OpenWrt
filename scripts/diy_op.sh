@@ -1,12 +1,34 @@
 #!/bin/bash
 
+#修改网络
+UCI_FILE="./package/base-files/files/etc/uci-defaults"
+mkdir -p $UCI_FILE
+cat << "EOF" > $UCI_FILE/99-custom
+uci -q batch << EOI
+set network.lan.ipaddr='10.0.1.1'
+set network.lan.gateway='10.0.1.2'
+set network.lan.ifname='eth0'
+set network.lan.dns='223.5.5.5'
+add network route
+set network.@route[-1].interface='lan'
+set network.@route[-1].target='10.8.1.0/24'
+set network.@route[-1].gateway='10.0.1.18'
+set system.@system[0].log_size='64'
+EOI
+EOF
+#下载immortalwrt的设置文件
+svn co https://github.com/immortalwrt/immortalwrt/trunk/package/emortal/default-settings
+rm -rf ./package/emortal/default-settings
+mv default-settings $UCI_FILE
+#安装配置
+echo "CONFIG_PACKAGE_default-settings=y" >> .config
+echo "CONFIG_PACKAGE_default-settings-chn=y" >> .config
+
 # 加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
 INFO_FILE="package/base-files/files/etc/openwrt_release"
-sed -i "s/DISTRIB_RELEASE='*.*'/DISTRIB_RELEASE='OpenWrt'/g" $INFO_FILE
 sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" $INFO_FILE
 sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
 
-# echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
 # echo "CONFIG_PACKAGE_tailscale=y" >> .config  # 安装tailscale
 # echo "CONFIG_PACKAGE_luci-app-zerotier=y" >> .config  # 安装zerotier
 # echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config  # EasyTier
@@ -34,8 +56,9 @@ if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
 fi
 # openclash或mihomo插件
 if [[ $OPENWRT_APPLICATIONS == "openclash" || $OPENWRT_APPLICATIONS == "mihomo" ]]; then
+  sed -i '/EOI/i set dhcp.@dnsmasq[0].dns_redirect="0"' $UCI_FILE/99-custom
   if [[ $OPENWRT_APPLICATIONS == "openclash" ]]; then
-    rm -rf feeds/luci/applications/luci-app-openclash
+    # rm -rf feeds/luci/applications/luci-app-openclash
     echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 
     # 设置openclash启动，否则第一次运行需要手动点
