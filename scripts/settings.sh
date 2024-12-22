@@ -20,8 +20,8 @@ echo "CONFIG_PACKAGE_luci-theme-$WRT_THEME=y" >> ./.config
 echo "CONFIG_PACKAGE_luci-app-$WRT_THEME-config=y" >> ./.config
 
 #修改默认时区
-sed -i "s/timezone='.*'/timezone='CST-8'/g" $CFG_FILE
-sed -i "/timezone='.*'/a\\\t\t\set system.@system[-1].zonename='Asia/Shanghai'" $CFG_FILE
+# sed -i "s/timezone='.*'/timezone='CST-8'/g" $CFG_FILE
+# sed -i "/timezone='.*'/a\\\t\t\set system.@system[-1].zonename='Asia/Shanghai'" $CFG_FILE
 
 #修改网络
 UCI_FILE="./package/base-files/files/etc/uci-defaults"
