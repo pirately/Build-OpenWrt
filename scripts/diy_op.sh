@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # 加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
-sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" package/base-files/files/etc/openwrt_release
-sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" package/base-files/files/etc/openwrt_release
+INFO_FILE="package/base-files/files/etc/openwrt_release"
+sed -i "s/DISTRIB_ID='.*'/DISTRIB_ID='OpenWrt'/g" $INFO_FILE
+sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" $INFO_FILE
+sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
 
 # echo "CONFIG_PACKAGE_bash=y" >> .config # 安装bash
 # echo "CONFIG_PACKAGE_tailscale=y" >> .config  # 安装tailscale
@@ -37,19 +39,20 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" || $OPENWRT_APPLICATIONS == "mihomo" 
     echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 
     # 设置openclash启动，否则第一次运行需要手动点
-    SH_PACH="$GITHUB_WORKSPACE/openwrt/files/etc/init.d"
-    mkdir -p $SH_PACH
-    echo '#!/bin/sh /etc/rc.common' > $SH_PACH/openclash.sh
-    echo '# Copyright (C) 2024 OpenWRT' >> $SH_PACH/openclash.sh
-    echo -e '# This script will enable OpenClash and reboot the device\n' >> $SH_PACH/openclash.sh
-    echo 'START=99' >> $SH_PACH/openclash.sh
-    echo 'start() {' >> $SH_PACH/openclash.sh
-    echo '  if ! grep -q "option enable '\''1'\''" /etc/config/openclash; then' >> $SH_PACH/openclash.sh
-    echo '    sed -i "s/option enable '\''0'\''/option enable '\''1'\''/g" /etc/config/openclash && reboot' >> $SH_PACH/openclash.sh
-    echo '    rm -f /etc/init.d/openclash.sh' >> $SH_PACH/openclash.sh
-    echo '  fi' >> $SH_PACH/openclash.sh 
-    echo '}' >> $SH_PACH/openclash.sh
-    chmod +x $SH_PACH/openclash.sh
+    SH_PATH="$GITHUB_WORKSPACE/openwrt/files/etc/init.d"
+    SH_FILE="$SH_PATH/openclash.sh"
+    mkdir -p $SH_PATH
+    echo '#!/bin/sh /etc/rc.common' > $SH_FILE
+    echo '# Copyright (C) 2024 OpenWRT' >> $SH_FILE
+    echo -e '# This script will enable OpenClash and reboot the device\n' >> $SH_FILE
+    echo 'START=99' >> $SH_FILE
+    echo 'start() {' >> $SH_FILE
+    echo '  if ! grep -q "option enable '\''1'\''" /etc/config/openclash; then' >> $SH_FILE
+    echo '    sed -i "s/option enable '\''0'\''/option enable '\''1'\''/g" /etc/config/openclash && reboot' >> $SH_FILE
+    echo '    rm -f /etc/init.d/openclash.sh' >> $SH_FILE
+    echo '  fi' >> $SH_FILE
+    echo '}' >> $SH_FILE
+    chmod +x $SH_FILE
   elif [[ $OPENWRT_APPLICATIONS == "mihomo" ]]; then
     echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
   fi
