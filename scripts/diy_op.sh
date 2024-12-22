@@ -16,11 +16,26 @@ set network.@route[-1].gateway='10.0.1.18'
 set system.@system[0].log_size='64'
 EOI
 EOF
-#下载immortalwrt的设置文件
-svn co https://github.com/immortalwrt/immortalwrt/trunk/package/emortal/default-settings
+
+#将指定的文件从远程仓库克隆到本地
+function git_sparse_clone() {
+branch="$1" rurl="$2" localdir="$3" && shift 3
+git clone -b $branch --depth 1 --filter=blob:none --sparse $rurl $localdir
+cd $localdir
+git sparse-checkout init --cone
+git sparse-checkout set $@
+mv -n $@ ../
+cd ..
+rm -rf $localdir
+}
+
+#下载immortalwrt的文件
+git_sparse_clone "master" "https://github.com/immortalwrt/immortalwrt.git" "immortalwrt_local" "package/emortal/default-settings"
+
 rm -rf ./package/emortal/default-settings
-mv default-settings $UCI_FILE
-#安装配置
+mv ./default-settings ./package
+
+#安装immortalwrt的配置
 echo "CONFIG_PACKAGE_default-settings=y" >> .config
 echo "CONFIG_PACKAGE_default-settings-chn=y" >> .config
 
