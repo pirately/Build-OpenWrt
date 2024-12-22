@@ -2,7 +2,7 @@
 
 # 加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
 INFO_FILE="package/base-files/files/etc/openwrt_release"
-sed -i "s/DISTRIB_ID='.*'/DISTRIB_ID='OpenWrt'/g" $INFO_FILE
+sed -i "s/DISTRIB_RELEASE='*.*'/DISTRIB_RELEASE='OpenWrt'/g" $INFO_FILE
 sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" $INFO_FILE
 sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
 
