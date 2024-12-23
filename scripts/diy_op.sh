@@ -51,7 +51,7 @@ sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
 # echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config # VNT
 
 # 删除自带的packages
-rm -rf feeds/packages/net/{chinadns*,hysteria,geoview,trojan*,xray*,v2ray*,sing*}
+rm -rf feeds/packages/net/{chinadns*,hysteria,geoview,trojan*}
 
 # 相关插件
 if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
