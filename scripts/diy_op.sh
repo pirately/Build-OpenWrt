@@ -51,7 +51,7 @@ sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
 # echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config # VNT
 
 # 删除自带的packages
-rm -rf feeds/packages/net/chinadns-ng
+# rm -rf feeds/packages/net/chinadns-ng
 # rm -rf feeds/packages/net/hysteria
 
 # 相关插件
@@ -62,6 +62,7 @@ fi
 if [[ $OPENWRT_APPLICATIONS == "passwall2" ]] ; then
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall2=y" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_V2ray_Geoview=y" >> .config
 fi
 if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
   rm -rf feeds/luci/applications/luci-app-ssr-plus
