@@ -30,10 +30,11 @@ rm -rf $localdir
 }
 
 #下载immortalwrt的文件
-git_sparse_clone "master" "https://github.com/immortalwrt/immortalwrt.git" "immortalwrt_local" "package/emortal/default-settings"
-
-rm -rf ./package/emortal/default-settings
-mv ./default-settings ./package
+if [[ $WRT_URL != *"immortalwrt"* ]]; then
+	git_sparse_clone "master" "https://github.com/immortalwrt/immortalwrt.git" "immortalwrt_local" "package/emortal/default-settings"
+	rm -rf ./package/emortal/default-settings
+  mv ./default-settings ./package
+fi
 
 #安装immortalwrt的配置
 echo "CONFIG_PACKAGE_default-settings=y" >> .config

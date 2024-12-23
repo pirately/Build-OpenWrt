@@ -38,7 +38,7 @@ UPDATE_PACKAGE "luci-app-easytier" "EasyTier/luci-app-easytier" "main" "pkg"
 UPDATE_PACKAGE "luci-app-vnt" "lmq8267/luci-app-vnt" "main" "pkg"
 UPDATE_PACKAGE "luci-app-gecoosac" "lwb1978/openwrt-gecoosac" "main"
 
-if [[ $WRT_REPO != *"immortalwrt"* ]]; then
+if [[ $WRT_URL != *"immortalwrt"* ]]; then
 	UPDATE_PACKAGE "qmi-wwan" "immortalwrt/wwan-packages" "master" "pkg"
 fi
 
