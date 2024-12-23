@@ -45,11 +45,6 @@ INFO_FILE="package/base-files/files/etc/openwrt_release"
 sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" $INFO_FILE
 sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
 
-# echo "CONFIG_PACKAGE_tailscale=y" >> .config  # 安装tailscale
-# echo "CONFIG_PACKAGE_luci-app-zerotier=y" >> .config  # 安装zerotier
-# echo "CONFIG_PACKAGE_luci-app-easytier=y" >> .config  # EasyTier
-# echo "CONFIG_PACKAGE_luci-app-vnt=y" >> .config # VNT
-
 # 删除自带的packages
 rm -rf feeds/packages/net/{chinadns*,hysteria,geoview,trojan*}
 
@@ -93,11 +88,4 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" || $OPENWRT_APPLICATIONS == "mihomo" 
   elif [[ $OPENWRT_APPLICATIONS == "mihomo" ]]; then
     echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
   fi
-fi
-# 安装homeproxy
-if [[ $OPENWRT_APPLICATIONS == "homeproxy" ]] ; then
-	git_sparse_clone "main" "https://github.com/lxiaya/openwrt-homeproxy" "openwrt-homeproxy" "luci-app-homeproxy"
-	rm -rf feeds/luci/applications/luci-app-homeproxy
-  mv ./luci-app-homeproxy ./package
-  echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> ./.config
 fi
