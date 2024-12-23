@@ -2,13 +2,15 @@
 
 ## 云编译OpenWRT固件
 
-[![Lean](https://img.shields.io/badge/OpenWrt-Lede-blueviolet.svg?style=flat&logo=appveyor)](https://github.com/coolsnowwolf/lede)  [![immortalwrt](https://img.shields.io/badge/OpenWrt-ImmortalWrt-orange.svg?style=flat&logo=appveyor)](https://github.com/immortalwrt/immortalwrt)  [![OpenWrt](https://img.shields.io/badge/OpenWrt-Official-red.svg?style=flat&logo=appveyor)](https://github.com/openwrt/openwrt)
+[![OpenWrt](https://img.shields.io/badge/OpenWrt-Official-red.svg?style=flat&logo=appveyor)](https://github.com/openwrt/openwrt) [![immortalwrt](https://img.shields.io/badge/OpenWrt-ImmortalWrt-orange.svg?style=flat&logo=appveyor)](https://github.com/immortalwrt/immortalwrt) [![Lean](https://img.shields.io/badge/OpenWrt-Lede-blueviolet.svg?style=flat&logo=appveyor)](https://github.com/coolsnowwolf/lede) 
 
 ## 固件简要说明：
 
 固件每天早上2点，检查上游源代码，自动编译。
 
 固件信息里的时间为编译开始的时间，方便核对上游源码提交时间。
+
+主要用于云编译官方`OpenWrt`或`ImmortalWrt`，已删除<s>Lede</s>相关部分。
 
 ## 目录简要说明：
 
