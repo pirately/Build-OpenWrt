@@ -19,14 +19,14 @@ EOF
 
 #将指定的文件从远程仓库克隆到本地
 function git_sparse_clone() {
-branch="$1" rurl="$2" localdir="$3" && shift 3
-git clone -b $branch --depth 1 --filter=blob:none --sparse $rurl $localdir
-cd $localdir
-git sparse-checkout init --cone
-git sparse-checkout set $@
-mv -n $@ ../
-cd ..
-rm -rf $localdir
+  branch="$1" rurl="$2" localdir="$3" && shift 3
+  git clone -b $branch --depth 1 --filter=blob:none --sparse $rurl $localdir
+  cd $localdir
+  git sparse-checkout init --cone
+  git sparse-checkout set $@
+  mv -n $@ ../
+  cd ..
+  rm -rf $localdir
 }
 
 #下载immortalwrt的文件
@@ -44,9 +44,6 @@ echo "CONFIG_PACKAGE_default-settings-chn=y" >> .config
 INFO_FILE="package/base-files/files/etc/openwrt_release"
 sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" $INFO_FILE
 sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
-
-# 删除自带的packages
-rm -rf feeds/packages/net/{chinadns*,hysteria,geoview,trojan*}
 
 # 相关插件
 if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
