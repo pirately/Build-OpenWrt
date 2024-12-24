@@ -30,7 +30,7 @@ function git_sparse_clone() {
 }
 
 #下载immortalwrt的文件
-if [[ $WRT_URL != *"immortalwrt"* ]]; then
+if [[ $WRT_REPO != *"immortalwrt"* ]]; then
 	git_sparse_clone "master" "https://github.com/immortalwrt/immortalwrt.git" "immortalwrt_local" "package/emortal/default-settings"
 	rm -rf ./package/emortal/default-settings
   mv ./default-settings ./package
