@@ -93,8 +93,6 @@ jobs:
         git clone --depth=1 --single-branch --branch $WRT_BRANCH $WRT_REPO ./openwrt
 
         cd ./openwrt/ && echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
-        KVER=$(find $GITHUB_WORKSPACE/openwrt/bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)
-        echo "WRT_KVER=${KVER:-none}" >> $GITHUB_ENV
 
     - name: Check Caches
       id: check-cache
@@ -193,6 +191,7 @@ jobs:
       run: |
         cd ./openwrt && mkdir ./upload
         cp -f ./.config ./upload/Config_"$WRT_TARGET"_"$WRT_VER"_"$WRT_DATE".txt
+        KVER=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)
         find ./bin/targets/ -iregex ".*\(buildinfo\|json\|manifest\|sha256sums\|packages\|bin\|rootfs.img.gz\|combined.img.gz\)$" -exec rm -rf {} +
 
         for TYPE in $WRT_TYPE ; do
@@ -206,6 +205,7 @@ jobs:
 
         find ./bin/targets/ -type f -exec mv -f {} ./upload/ \;
 
+        echo "WRT_KVER=${KVER:-none}" >> $GITHUB_ENV
         echo "FIRMWARE=$PWD/upload" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
