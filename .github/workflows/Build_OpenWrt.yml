@@ -81,11 +81,16 @@ jobs:
 
     - name: Initialization Values
       run: |
-        echo "WRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")" >> $GITHUB_ENV
-        echo "WRT_TIME=$(TZ=UTC-8 date +%Y.%m.%d)" >> $GITHUB_ENV
-        echo "WRT_SOURCE=$(echo $WRT_REPO | cut -d '/' -f 5-)" >> $GITHUB_ENV
-        echo "WRT_VER=$(echo $WRT_SOURCE-$WRT_BRANCH)" >> $GITHUB_ENV
-        echo "WRT_TYPE=$(sed -n "1{s/^#//;s/\r$//;p;q}" $GITHUB_WORKSPACE/config/$WRT_TARGET.config)" >> $GITHUB_ENV
+        export WRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")
+        export WRT_TIME=$(TZ=UTC-8 date +%Y.%m.%d)
+        export WRT_SOURCE=$(echo $WRT_REPO | cut -d '/' -f 5-)
+        export WRT_VER=$WRT_SOURCE-$WRT_BRANCH
+        export WRT_TYPE=$(sed -n "1{s/^#//;s/\r$//;p;q}" $GITHUB_WORKSPACE/config/$WRT_TARGET.config)
+        echo "WRT_DATE=$WRT_DATE" >> $GITHUB_ENV
+        echo "WRT_TIME=$WRT_TIME" >> $GITHUB_ENV
+        echo "WRT_SOURCE=$WRT_SOURCE" >> $GITHUB_ENV
+        echo "WRT_VER=$WRT_VER" >> $GITHUB_ENV
+        echo "WRT_TYPE=$WRT_TYPE" >> $GITHUB_ENV
 
     - name: Clone Source Code
       run: |
@@ -224,7 +229,7 @@ jobs:
         1、源码：${{ env.WRT_REPO }}
         2、分支：${{ env.WRT_BRANCH }}
         3、设备：${{ env.WRT_TARGET }}
-        4、内核：${{ env.WRT_KVR }}
+        4、内核：${{ env.WRT_KVER }}
         -- Build by Jeffen with Github Actions on ${{ env.WRT_DATE }} for ${{ env.WRT_TARGET }} device
         EOF
         echo "status=success" >> $GITHUB_OUTPUT
@@ -243,7 +248,7 @@ jobs:
       if: env.SCKEY && env.INFORMATION_NOTICE == 'true'
       run: |
         if [[ "${{steps.compile.outcome}}" == 'success' ]]; then
-          curl -k --data title="✌️【$WRT_SOURCE】编译成功" --data desp="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件顺利编译完成了✌️💯💐%0A%0A🎄源码：${WRT_REPO}%0A%0A💕分支：【${WRT_BRANCH}】%0A%0A😋设备：【$WRT_TARGET】%0A%0A🔑内核：【${WRT_KVER}】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send" 
+          curl -k --data title="✌️【$WRT_SOURCE】编译成功" --data desp="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件顺利编译完成了✌️💯💐%0A%0A🎄源码：${WRT_REPO}%0A%0A💕分支：【${WRT_BRANCH}】%0A%0A😋设备：【$WRT_TARGET】%0A%0A🔑内核：【${{env.WRT_KVER}}】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send" 
         fi
 
     - name: Delete workflow runs
