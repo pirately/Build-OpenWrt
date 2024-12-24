@@ -83,7 +83,6 @@ jobs:
       run: |
         echo "WRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")" >> $GITHUB_ENV
         echo "WRT_TIME=$(TZ=UTC-8 date +%Y.%m.%d)" >> $GITHUB_ENV
-        echo "WRT_CI=$(basename $GITHUB_WORKSPACE)" >> $GITHUB_ENV
         echo "WRT_SOURCE=$(echo $WRT_REPO | cut -d '/' -f 5-)" >> $GITHUB_ENV
         echo "WRT_VER=$(echo $WRT_SOURCE-$WRT_BRANCH)" >> $GITHUB_ENV
         echo "WRT_TYPE=$(sed -n "1{s/^#//;s/\r$//;p;q}" $GITHUB_WORKSPACE/config/$WRT_TARGET.config)" >> $GITHUB_ENV
@@ -142,8 +141,8 @@ jobs:
       run: |
         cd ./openwrt/package/
 
-        $GITHUB_WORKSPACE/Scripts/Packages.sh
-        $GITHUB_WORKSPACE/Scripts/Handles.sh
+        $GITHUB_WORKSPACE/scripts/packages.sh
+        $GITHUB_WORKSPACE/scripts/handles.sh
 
         cd ../
         rm -rf ./tmp* ./.config*
@@ -169,7 +168,7 @@ jobs:
       run: |
         cd ./openwrt
         echo -e "$(($(nproc)+1)) thread compile"
-        make -j$(($(nproc)+1)) || make -j1 V=s &>build.log || (tail -50 build.log; curl -k --data title="❌【$WRT_SOURCE】编译失败" --data desp="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件失败了✌️💯💐%0A%0A🎄源码：${WRT_REPO}%0A%0A💕分支：【${WRT_BRANCH}】%0A%0A😋设备：【$WRT_TARGET】%0A%0A🔑内核：【${WRT_KVER}】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send"; exit 1)
+        make -j$(($(nproc)+1)) || make -j1 V=s &>build.log || (tail -50 build.log; curl -k --data title="❌【$WRT_SOURCE】编译失败" --data desp="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件失败了✌️💯💐%0A%0A🎄源码：${WRT_REPO}%0A%0A💕分支：【${WRT_BRANCH}】%0A%0A😋设备：【$WRT_TARGET】%0A%0A🎉插件：【$OPENWRT_APPLICATIONS】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send"; exit 1)
 
         echo "status=success" >> $GITHUB_OUTPUT
 
