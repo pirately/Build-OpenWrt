@@ -71,18 +71,23 @@ if [[ $OPENWRT_APPLICATIONS == "openclash" || $OPENWRT_APPLICATIONS == "mihomo" 
 
     # 设置openclash启动，否则第一次运行需要手动点
     SH_PATH="$GITHUB_WORKSPACE/openwrt/files/etc/init.d"
-    SH_FILE="$SH_PATH/openclash.sh"
+    SH_FILE="$SH_PATH/set_openclash.sh"
+    # 创建目录并写入脚本内容
     mkdir -p $SH_PATH
-    echo '#!/bin/sh /etc/rc.common' > $SH_FILE
-    echo '# Copyright (C) 2024 OpenWRT' >> $SH_FILE
-    echo -e '# This script will enable OpenClash and reboot the device\n' >> $SH_FILE
-    echo 'START=99' >> $SH_FILE
-    echo 'start() {' >> $SH_FILE
-    echo '  if ! grep -q "option enable '\''1'\''" /etc/config/openclash; then' >> $SH_FILE
-    echo '    sed -i "s/option enable '\''0'\''/option enable '\''1'\''/g" /etc/config/openclash && reboot' >> $SH_FILE
-    echo '    rm -f /etc/init.d/openclash.sh' >> $SH_FILE
-    echo '  fi' >> $SH_FILE
-    echo '}' >> $SH_FILE
+    cat << 'EOF' > $SH_FILE
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2024 OpenWRT
+# This script will enable OpenClash and reboot the device
+
+START=99
+start() {
+  if ! grep -q "option enable '1'" /etc/config/openclash; then
+    sed -i "s/option enable '0'/option enable '1'/g" /etc/config/openclash && reboot
+    rm -f /etc/init.d/set_openclash.sh
+  fi
+}
+EOF
+    # 赋予脚本可执行权限
     chmod +x $SH_FILE
   elif [[ $OPENWRT_APPLICATIONS == "mihomo" ]]; then
     echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
