@@ -7,7 +7,6 @@ if [ -d *"homeproxy"* ]; then
 	HP_RULES="surge"
 	HP_PATCH="homeproxy/root/etc/homeproxy"
 
-	chmod +x ./$HP_PATCH/scripts/*
 	rm -rf ./$HP_PATCH/resources/*
 
 	git clone -q --depth=1 --single-branch --branch "release" "https://github.com/Loyalsoldier/surge-rules.git" ./$HP_RULES/
@@ -52,11 +51,10 @@ fi
 
 # 安装openclash内核
 if [ -d *"openclash"* ]; then
-	# CORE_VER="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version"
-	# CORE_TYPE=$(echo $WRT_TARGET | grep -Eiq "64|86" && echo "amd64" || echo "arm64")
-	# CORE_TUN_VER=$(curl -sL $CORE_VER | sed -n "2{s/\r$//;p;q}")
+	CORE_VER="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version"
+	CORE_TYPE=$(echo $WRT_TARGET | grep -Eiq "64|86" && echo "amd64" || echo "arm64")
 
-	CORE_META="https://github.com/vernesong/OpenClash/raw/core/master/meta/clash-linux-amd64.tar.gz"
+	CORE_META="https://github.com/vernesong/OpenClash/raw/core/master/meta/clash-linux-$CORE_TYPE.tar.gz"
 
 	GEO_MMDB="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb"
 	GEO_SITE="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"

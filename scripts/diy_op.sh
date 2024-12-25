@@ -42,30 +42,28 @@ echo "CONFIG_PACKAGE_default-settings-chn=y" >> .config
 
 # 加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
 INFO_FILE="package/base-files/files/etc/openwrt_release"
-sed -i "s/DISTRIB_ID='*.*'/DISTRIB_ID='OpenWrt'/g" $INFO_FILE
-sed -i "s/DISTRIB_RELEASE='*.*'/DISTRIB_RELEASE=' by Jeffen'/g" $INFO_FILE
 sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
 sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" $INFO_FILE
 
 # 相关插件
-if [[ $OPENWRT_APPLICATIONS == "passwall" ]] ; then
+if [[ $WRT_PLUGIN == "passwall" ]] ; then
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
 fi
-if [[ $OPENWRT_APPLICATIONS == "passwall2" ]] ; then
+if [[ $WRT_PLUGIN == "passwall2" ]] ; then
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall2=y" >> .config
 fi
-if [[ $OPENWRT_APPLICATIONS == "ssrplus" ]] ; then
+if [[ $WRT_PLUGIN == "ssrplus" ]] ; then
   rm -rf feeds/luci/applications/luci-app-ssr-plus
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-ssr-plus=y" >> .config
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
 fi
 # openclash或mihomo插件
-if [[ $OPENWRT_APPLICATIONS == "openclash" || $OPENWRT_APPLICATIONS == "mihomo" ]]; then
+if [[ $WRT_PLUGIN == "openclash" || $WRT_PLUGIN == "mihomo" ]]; then
   sed -i '/EOI/i set dhcp.@dnsmasq[0].dns_redirect="0"' $UCI_FILE/99-custom
-  if [[ $OPENWRT_APPLICATIONS == "openclash" ]]; then
+  if [[ $WRT_PLUGIN == "openclash" ]]; then
     # rm -rf feeds/luci/applications/luci-app-openclash
     echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 
@@ -89,7 +87,7 @@ start() {
 EOF
     # 赋予脚本可执行权限
     chmod +x $SH_FILE
-  elif [[ $OPENWRT_APPLICATIONS == "mihomo" ]]; then
+  elif [[ $WRT_PLUGIN == "mihomo" ]]; then
     echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
   fi
 fi
