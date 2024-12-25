@@ -13,7 +13,6 @@ on:
 env:
   REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
   SCKEY: ${{ secrets.SCKEY }}
-  TZ: Asia/Shanghai
 
 jobs:
   build:
@@ -194,7 +193,7 @@ jobs:
       if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
         cd ./openwrt && mkdir ./upload
-        cp -f ./.config ./upload/Config_"$WRT_VER"("$OPENWRT_APPLICATIONS")_"$WRT_DATE".txt
+        cp -f ./.config ./upload/Config_$WRT_VER($OPENWRT_APPLICATIONS)_$WRT_DATE.config
         KVER=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)
         find ./bin/targets/ -iregex ".*\(buildinfo\|json\|manifest\|sha256sums\|packages\|bin\|rootfs.img.gz\|combined.img.gz\)$" -exec rm -rf {} +
 
