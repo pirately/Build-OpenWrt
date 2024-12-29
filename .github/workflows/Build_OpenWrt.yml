@@ -79,6 +79,32 @@ jobs:
 
         cd ./openwrt/ && echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
 
+    - name: Check Caches
+      id: check-cache
+      uses: actions/cache@main
+      with:
+        key: ${{env.WRT_VER}}-${{env.WRT_TARGET}}-${{env.WRT_HASH}}
+        path: |
+          ./openwrt/.ccache
+          ./openwrt/staging_dir/host*
+          ./openwrt/staging_dir/tool*
+
+    - name: Update Caches
+      run: |
+        if ${{steps.check-cache.outputs.cache-hit == 'true'}}; then
+          sed -i 's/ $(tool.*\/stamp-compile)//g' ./openwrt/Makefile
+          sed -i 's/ $(tool.*\/stamp-install)//g' ./openwrt/Makefile
+
+          echo "toolchain skiped done!"
+        else
+          CACHE_LIST=$(gh cache list --key "$WRT_VER-$WRT_TARGET" | cut -f 1)
+          for CACHE_KEY in $CACHE_LIST; do
+             gh cache delete $CACHE_KEY
+          done
+
+          echo "caches cleanup done!"
+        fi
+
     - name: Update Feeds
       run: |
         cd ./openwrt
@@ -116,14 +142,6 @@ jobs:
       run: |
         cd ./openwrt
         make download -j$(($(nproc)+1))
-
-    - name: Cache
-      uses: stupidloud/cachewrtbuild@main
-      with:
-        ccache: 'true'
-        mixkey: ${{ env.WRT_VER }}
-        clean: ${{ contains(github.event.action, 'nocache') }}
-        prefix: ${{ github.workspace }}/openwrt
 
     - name: Compile the firmware
       id: compile
