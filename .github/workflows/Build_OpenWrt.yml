@@ -35,22 +35,21 @@ jobs:
         echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
         echo "INFORMATION_NOTICE=${INFORMATION_NOTICE}" >> $GITHUB_ENV 
 
-    - name: Free Disk Space
-      uses: endersonmenezes/free-disk-space@main
-      with:
-        testing: false
-        remove_android: true
-        remove_dotnet: true
-        remove_haskell: true
-        remove_tool_cache: true
-        remove_swap: true
-        remove_packages_one_command: true
+      - name: Free Disk Space
+        uses: FirelightFlagboy/gh-runner-free-disk-space@main
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          docker-images: true
+          large-packages: true
+          swap-storage: true
+          tool-cache: false
 
     - name: Initialization Environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        docker image prune -f
         sudo -E apt -yqq update
         sudo -E apt -yqq full-upgrade
         sudo -E apt -yqq autoremove --purge
@@ -84,20 +83,25 @@ jobs:
       uses: actions/cache@main
       with:
         key: ${{env.WRT_VER}}-${{env.WRT_TARGET}}-${{env.WRT_HASH}}
-        restore-keys: ${{env.WRT_VER}}-${{env.WRT_TARGET}}-
+        restore-keys: ${{env.WRT_VER}}-${{env.WRT_TARGET}}
         path: |
           ./openwrt/.ccache
-          ./openwrt/staging_dir
+          ./openwrt/staging_dir/host*
+          ./openwrt/staging_dir/tool*
 
     - name: Update Caches
       run: |
-        find "./openwrt/staging_dir" -type d -name "stamp" -not -path "*target*" | while read -r DIR; do
-          find "$DIR" -type f -exec touch {} +
-        done
-        
-        mkdir -p ./openwrt/tmp
-        echo "1" > ./openwrt/tmp/.build
-        echo "toolchain skiped done!"
+        if [ -d "./openwrt/staging_dir" ]; then
+          find "./openwrt/staging_dir" -type d -name "stamp" -not -path "*target*" | while read -r DIR; do
+            find "$DIR" -type f -exec touch {} +
+          done
+
+          mkdir -p ./openwrt/tmp && echo "1" > ./openwrt/tmp/.build
+
+          echo "toolchain skiped done!"
+        else
+          echo "caches missed!"
+        fi
 
         if ${{steps.check-cache.outputs.cache-hit != 'true'}}; then
           CACHE_LIST=$(gh cache list --key "$WRT_VER-$WRT_TARGET" | cut -f 1)
