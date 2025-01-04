@@ -44,7 +44,7 @@ jobs:
         docker-images: true
         large-packages: true
         swap-storage: true
-        tool-cache: false
+        tool-cache: true
 
     - name: Initialization Environment
       env:
