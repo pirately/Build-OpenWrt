@@ -49,14 +49,6 @@ if [ -f "$TS_FILE" ]; then
 	cd $PKG_PATH && echo "tailscale has been fixed!"
 fi
 
-#修复argon主题进度条颜色不同步
-LESS_FILE="./luci-theme-argon/less/cascade.less"
-if [ -f "$LESS_FILE" ]; then
-	sed -i 's/(--bar-bg)/(--primary)/g' $LESS_FILE
-
-	cd $PKG_PATH && echo "theme-argon has been fixed!"
-fi
-
 # 安装openclash内核
 if [ -d *"openclash"* ]; then
 	CORE_VER="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version"
