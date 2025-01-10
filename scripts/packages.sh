@@ -36,6 +36,7 @@ UPDATE_PACKAGE "passwall2" "xiaorouji/openwrt-passwall2" "main" "pkg"
 UPDATE_PACKAGE "passwall-packages" "xiaorouji/openwrt-passwall-packages" "main"
 # UPDATE_PACKAGE "ssr-plus" "fw876/helloworld" "master"
 
+UPDATE_PACKAGE "ddns-go" "sirpdboy/luci-app-ddns-go" "main" "pkg"
 UPDATE_PACKAGE "easytier" "lazyoop/networking-artifact" "main" "pkg"
 UPDATE_PACKAGE "luci-app-easytier" "EasyTier/luci-app-easytier" "main" "pkg"
 
