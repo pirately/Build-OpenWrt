@@ -1,22 +1,5 @@
 #!/bin/bash
 
-#修改网络
-UCI_FILE="./package/base-files/files/etc/uci-defaults"
-mkdir -p $UCI_FILE
-cat << "EOF" > $UCI_FILE/99-custom
-uci -q batch << EOI
-set network.lan.ipaddr='10.0.1.1'
-set network.lan.gateway='10.0.1.2'
-set network.lan.ifname='eth0'
-set network.lan.dns='223.5.5.5'
-add network route
-set network.@route[-1].interface='lan'
-set network.@route[-1].target='10.8.1.0/24'
-set network.@route[-1].gateway='10.0.1.18'
-set system.@system[0].log_size='64'
-EOI
-EOF
-
 #将指定的文件从远程仓库克隆到本地
 function git_sparse_clone() {
   branch="$1" rurl="$2" localdir="$3" && shift 3
@@ -61,6 +44,7 @@ if [[ $WRT_PLUGIN == "ssrplus" ]] ; then
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
 fi
 # openclash或mihomo插件
+UCI_FILE="./package/base-files/files/etc/uci-defaults"
 if [[ $WRT_PLUGIN == "openclash" || $WRT_PLUGIN == "mihomo" ]]; then
   sed -i '/EOI/i set dhcp.@dnsmasq[0].dns_redirect="0"' $UCI_FILE/99-custom
   if [[ $WRT_PLUGIN == "openclash" ]]; then

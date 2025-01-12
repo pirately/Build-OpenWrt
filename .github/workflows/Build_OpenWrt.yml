@@ -31,6 +31,7 @@ jobs:
         echo "WRT_THEME=${WRT_THEME}" >> $GITHUB_ENV
         echo "WRT_NAME=${WRT_NAME}" >> $GITHUB_ENV
         echo "WRT_PLUGIN=${WRT_PLUGIN}" >> $GITHUB_ENV
+        echo "WRT_ROUTE=${WRT_ROUTE}" >> $GITHUB_ENV
         echo "UPLOAD_FIRMWARE=${UPLOAD_FIRMWARE}" >> $GITHUB_ENV        
         echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
         echo "INFORMATION_NOTICE=${INFORMATION_NOTICE}" >> $GITHUB_ENV 
@@ -130,6 +131,7 @@ jobs:
         git clone https://oauth2:$REPO_TOKEN@github.com/pirately/OpenWrt_Files
         cp -f OpenWrt_Files/diy/banner openwrt/package/base-files/files/etc/banner
         sed -i "s/%D %V, %C/OpenWrt by Jeffen ${WRT_TIME}/g" openwrt/package/base-files/files/etc/banner
+        cp -rf OpenWrt_Files/diy/* ./ && rm -rf ./banner
         cp -f OpenWrt_Files/scripts/diy.sh $GITHUB_WORKSPACE/scripts
         cp -rf OpenWrt_Files/${{ env.WRT_PLUGIN }}/* ./ && rm -rf OpenWrt_Files
         [ -e files ] && mv files openwrt/files
@@ -146,8 +148,8 @@ jobs:
         cd ../
         cat $GITHUB_WORKSPACE/config/$WRT_TARGET.config $GITHUB_WORKSPACE/config/general.config >> .config
         $GITHUB_WORKSPACE/scripts/settings.sh
-        $GITHUB_WORKSPACE/scripts/diy_op.sh
         $GITHUB_WORKSPACE/scripts/diy.sh
+        $GITHUB_WORKSPACE/scripts/diy_op.sh
         make defconfig -j$(($(nproc)+1))
 
     - name: Download Packages
