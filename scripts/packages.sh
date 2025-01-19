@@ -83,5 +83,4 @@ UPDATE_VERSION() {
 UPDATE_VERSION "sing-box"
 if [[ $WRT_PLUGIN == *"passwall"* ]]; then
 	UPDATE_VERSION "xray-core"
-	UPDATE_VERSION "chinadns-ng"
 fi

@@ -36,6 +36,8 @@ fi
 if [[ $WRT_PLUGIN == "passwall2" ]] ; then
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall2=y" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_V2ray_Plugin=n" >> .config
+  echo "CONFIG_PACKAGE_v2ray-plugin=n" >> .config
 fi
 if [[ $WRT_PLUGIN == "ssrplus" ]] ; then
   rm -rf feeds/luci/applications/luci-app-ssr-plus
