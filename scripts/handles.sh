@@ -82,10 +82,11 @@ if [ -d *"easytier"* ]; then
 	ET_VER=$(curl -sSL "https://api.github.com/repos/EasyTier/EasyTier/releases/latest" | grep "tag_name" | head -n 1 | awk -F'"' '{print $4}')
 	ET_TYPE=$(echo $WRT_TARGET | grep -Eiq "64|86" && echo "x86_64" || echo "arm")
 	ET_PKG="https://github.com/EasyTier/EasyTier/releases/download/$ET_VER/easytier-linux-$ET_TYPE-$ET_VER.zip"
+	
+	cd ./luci-app-easytier/root/etc/easytier/
+	curl -sL -o easytier-core.zip $ET_PKG && unzip -oq easytier-core.zip && cp -rf ./easytier-linux-$ET_TYPE/easytier-core ./ && echo "easytier done!"
 
-	curl -sL -o easytier-core.zip $ET_PKG && unzip -oq easytier-core.zip && cp -rf ./easytier-linux-$ET_TYPE/easytier-core /usr/bin && echo "easytier done!"
-
-	chmod +x /usr/bin/easytier-core && rm -rf ./easytier-core.zip && rm -rf ./easytier-linux-$ET_TYPE
+	chmod +x ./easytier-core && rm -rf ./easytier-core.zip && rm -rf ./easytier-linux-$ET_TYPE
 
 	cd $PKG_PATH && echo "easytier date has been updated!"
 fi
