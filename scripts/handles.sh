@@ -84,7 +84,7 @@ if [ -d *"easytier"* ]; then
 	ET_PKG="https://github.com/EasyTier/EasyTier/releases/download/$ET_VER/easytier-linux-$ET_TYPE-$ET_VER.zip"
 	
 	cd ./luci-app-easytier/root/etc/easytier/
-	curl -sL -o easytier-core.zip $ET_PKG && unzip -oq easytier-core.zip && cp -rf ./easytier-linux-$ET_TYPE/easytier-core ./ && echo "easytier done!"
+	curl -sL -o easytier-core.zip $ET_PKG && jar xvf easytier-core.zip && cp -rf ./easytier-linux-$ET_TYPE/easytier-core ./ && echo "easytier done!"
 
 	chmod +x ./easytier-core && rm -rf ./easytier-core.zip && rm -rf ./easytier-linux-$ET_TYPE
 
