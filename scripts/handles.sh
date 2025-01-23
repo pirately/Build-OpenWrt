@@ -78,31 +78,25 @@ if [ -d *"openclash"* ]; then
 fi
 
 # 安装EasyTier内核
-if [ -d *"easytier"* ]; then
-	ET_VER=$(curl -sSL "https://api.github.com/repos/EasyTier/EasyTier/releases/latest" | grep "tag_name" | head -n 1 | awk -F'"' '{print $4}')
-	ET_TYPE=$(echo $WRT_TARGET | grep -Eiq "64|86" && echo "x86_64" || echo "arm")
-	ET_PKG="https://github.com/EasyTier/EasyTier/releases/download/$ET_VER/easytier-linux-$ET_TYPE-$ET_VER.zip"
-	
-	cd ./luci-app-easytier/root/etc/easytier/
-	curl -sL -o easytier-core.zip $ET_PKG && jar xvf easytier-core.zip && cp -rf ./easytier-linux-$ET_TYPE/easytier-core ./ && echo "easytier done!"
-
-	chmod +x ./easytier-core && rm -rf ./easytier-core.zip && rm -rf ./easytier-linux-$ET_TYPE
-
-	cd $PKG_PATH && echo "easytier date has been updated!"
-fi
-
-#修复argon主题进度条颜色不同步(原版作者)
-if [ -d *"luci-theme-argon"* ]; then
-	sed -i 's/(--bar-bg)/(--primary)/g' $(find ./luci-theme-argon -type f -iname "cascade.*")
-	cd $PKG_PATH && echo "theme-argon has been fixed!"
-fi
+# if [ -d *"easytier"* ]; then
+# 	ET_VER=$(curl -sSL "https://api.github.com/repos/EasyTier/EasyTier/releases/latest" | grep "tag_name" | head -n 1 | awk -F'"' '{print $4}')
+# 	ET_TYPE=$(echo $WRT_TARGET | grep -Eiq "64|86" && echo "x86_64" || echo "arm")
+# 	ET_PKG="https://github.com/EasyTier/EasyTier/releases/download/$ET_VER/easytier-linux-$ET_TYPE-$ET_VER.zip"
+# 	
+# 	cd ./luci-app-easytier/root/etc/easytier/
+# 	curl -sL -o easytier-core.zip $ET_PKG && jar xvf easytier-core.zip && cp -rf ./easytier-linux-$ET_TYPE/easytier-core ./ && echo "easytier done!"
+#
+# 	chmod +x ./easytier-core && rm -rf ./easytier-core.zip && rm -rf ./easytier-linux-$ET_TYPE
+#
+# 	cd $PKG_PATH && echo "easytier date has been updated!"
+# fi
 
 #修改argon主题字体和颜色
-# if [ -d *"luci-theme-argon"* ]; then
-# 	cd ./luci-theme-argon/
-#
-# 	sed -i '/font-weight:/ {/!important/! s/\(font-weight:\s*\)[^;]*;/\1normal;/}' $(find ./luci-theme-argon -type f -iname "*.css")
-# 	sed -i "s/primary '.*'/primary '#31a1a1'/; s/'0.2'/'0.5'/; s/'none'/'bing'/" ./luci-app-argon-config/root/etc/config/argon
-#
-# 	cd $PKG_PATH && echo "theme-argon has been fixed!"
-# fi
+if [ -d *"luci-theme-argon"* ]; then
+	cd ./luci-theme-argon/
+
+	sed -i '/font-weight:/ {/!important/! s/\(font-weight:\s*\)[^;]*;/\1normal;/}' $(find ./luci-theme-argon -type f -iname "*.css")
+	sed -i "s/primary '.*'/primary '#31a1a1'/; s/'0.2'/'0.5'/; s/'none'/'bing'/" ./luci-app-argon-config/root/etc/config/argon
+
+	cd $PKG_PATH && echo "theme-argon has been fixed!"
+fi
