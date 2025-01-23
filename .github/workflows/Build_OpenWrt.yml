@@ -197,6 +197,8 @@ jobs:
         done
 
         find ./bin/targets/ -type f -exec mv -f {} ./upload/ \;
+        
+        make clean
 
         echo "WRT_KVER=${KVER:-none}" >> $GITHUB_ENV
         echo "FIRMWARE=$PWD/upload" >> $GITHUB_ENV
