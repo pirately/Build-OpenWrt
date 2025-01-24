@@ -81,8 +81,9 @@ EOF
 fi
 
 # EasyTier
-ET_FILE="$SH_PATH/set_easytier.sh"
-cat << 'EOF' > $ET_FILE
+if [ -d *"easytier"* ]; then
+  ET_FILE="$SH_PATH/set_easytier.sh"
+  cat << 'EOF' > $ET_FILE
 #!/bin/sh /etc/rc.common
 # Copyright (C) 2024 OpenWRT
 # This script will enable EasyTier and reboot the device
@@ -90,9 +91,11 @@ cat << 'EOF' > $ET_FILE
 START=99
 start() {
   # sleep 30
-  if ! grep -q "option enable '1'" /etc/config/easytier; then
-    sed -i "s/option enable '0'/option enable '1'/g" /etc/config/easytier && reboot
+  if ! grep -q "option enabled '1'" /etc/config/easytier; then
+    sed -i "s/option enabled '0'/option enabled '1'/g" /etc/config/easytier && reboot
+    rm -f /etc/init.d/set_easytier.sh
   fi
 }
 EOF
-chmod +x $ET_FILE
+  chmod +x $ET_FILE
+fi
