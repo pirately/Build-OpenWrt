@@ -79,21 +79,3 @@ EOF
     echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
   fi
 fi
-
-# EasyTier
-ET_FILE="$SH_PATH/set_easytier.sh"
-cat << 'EOF' > $ET_FILE
-#!/bin/sh /etc/rc.common
-# Copyright (C) 2024 OpenWRT
-# This script will enable EasyTier and reboot the device
-
-START=99
-start() {
-  # sleep 30
-  if ! grep -q "option enabled '1'" /etc/config/easytier; then
-    sed -i "s/option enabled '0'/option enabled '1'/g" /etc/config/easytier && reboot
-    rm -f /etc/init.d/set_easytier.sh
-  fi
-}
-EOF
-chmod +x $ET_FILE
