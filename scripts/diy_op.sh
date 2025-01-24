@@ -92,7 +92,6 @@ start() {
   # sleep 30
   if ! grep -q "option enable '1'" /etc/config/easytier; then
     sed -i "s/option enable '0'/option enable '1'/g" /etc/config/easytier && reboot
-    rm -f /etc/init.d/set_easytier.sh
   fi
 }
 EOF
