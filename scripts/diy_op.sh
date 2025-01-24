@@ -45,8 +45,12 @@ if [[ $WRT_PLUGIN == "ssrplus" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-ssr-plus=y" >> .config
   echo "CONFIG_PACKAGE_haproxy=y" >> .config
 fi
-# openclash或mihomo插件
+
 UCI_FILE="./package/base-files/files/etc/uci-defaults"
+SH_PATH="$GITHUB_WORKSPACE/openwrt/files/etc/init.d"
+mkdir -p $SH_PATH
+
+# openclash或mihomo插件
 if [[ $WRT_PLUGIN == "openclash" || $WRT_PLUGIN == "mihomo" ]]; then
   sed -i '/EOI/i set dhcp.@dnsmasq[0].dns_redirect="0"' $UCI_FILE/99-custom
   if [[ $WRT_PLUGIN == "openclash" ]]; then
@@ -54,11 +58,9 @@ if [[ $WRT_PLUGIN == "openclash" || $WRT_PLUGIN == "mihomo" ]]; then
     echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
 
     # 设置openclash启动，否则第一次运行需要手动点
-    SH_PATH="$GITHUB_WORKSPACE/openwrt/files/etc/init.d"
-    SH_FILE="$SH_PATH/set_openclash.sh"
+    OCL_FILE="$SH_PATH/set_openclash.sh"
     # 创建目录并写入脚本内容
-    mkdir -p $SH_PATH
-    cat << 'EOF' > $SH_FILE
+    cat << 'EOF' > $OCL_FILE
 #!/bin/sh /etc/rc.common
 # Copyright (C) 2024 OpenWRT
 # This script will enable OpenClash and reboot the device
@@ -72,8 +74,26 @@ start() {
 }
 EOF
     # 赋予脚本可执行权限
-    chmod +x $SH_FILE
+    chmod +x $OCL_FILE
   elif [[ $WRT_PLUGIN == "mihomo" ]]; then
     echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
   fi
 fi
+
+# EasyTier
+ET_FILE="$SH_PATH/set_easytier.sh"
+cat << 'EOF' > $ET_FILE
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2024 OpenWRT
+# This script will enable EasyTier and reboot the device
+
+START=99
+start() {
+  # sleep 30
+  if ! grep -q "option enable '1'" /etc/config/easytier; then
+    sed -i "s/option enable '0'/option enable '1'/g" /etc/config/easytier && reboot
+    rm -f /etc/init.d/set_easytier.sh
+  fi
+}
+EOF
+chmod +x $ET_FILE
