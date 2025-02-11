@@ -50,8 +50,8 @@ UCI_FILE="./package/base-files/files/etc/uci-defaults"
 SH_PATH="$GITHUB_WORKSPACE/openwrt/files/etc/init.d"
 mkdir -p $SH_PATH
 
-# openclash或mihomo插件
-if [[ $WRT_PLUGIN == "openclash" || $WRT_PLUGIN == "mihomo" ]]; then
+# openclash或nikki插件
+if [[ $WRT_PLUGIN == "openclash" || $WRT_PLUGIN == "nikki" ]]; then
   sed -i '/EOI/i set dhcp.@dnsmasq[0].dns_redirect="0"' $UCI_FILE/99-custom
   if [[ $WRT_PLUGIN == "openclash" ]]; then
     # rm -rf feeds/luci/applications/luci-app-openclash
@@ -75,7 +75,7 @@ start() {
 EOF
     # 赋予脚本可执行权限
     chmod +x $OCL_FILE
-  elif [[ $WRT_PLUGIN == "mihomo" ]]; then
-    echo "CONFIG_PACKAGE_luci-app-mihomo=y" >> ./.config
+  elif [[ $WRT_PLUGIN == "nikki" ]]; then
+    echo "CONFIG_PACKAGE_luci-app-nikki=y" >> ./.config
   fi
 fi
