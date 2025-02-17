@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 删除自带的packages
-rm -rf ../feeds/packages/net/{chinadns*,ddns-go,hysteria,geoview,trojan*,xray*,v2ray*,sing*}
+# rm -rf ../feeds/packages/net/{chinadns*,ddns-go,hysteria,geoview,trojan*,xray*,v2ray*,sing*}
 
 #安装和更新软件包
 UPDATE_PACKAGE() {
@@ -9,12 +9,39 @@ UPDATE_PACKAGE() {
 	local PKG_REPO=$2
 	local PKG_BRANCH=$3
 	local PKG_SPECIAL=$4
+	local CUSTOM_NAMES=($5)  # 第5个参数为自定义名称列表
 	local REPO_NAME=$(echo $PKG_REPO | cut -d '/' -f 2)
 
-	find ./ ../feeds/luci/ ../feeds/packages/ -maxdepth 3 -type d -iname "*$PKG_NAME*" -exec rm -rf {} +
+	echo " "
 
+	# 将 PKG_NAME 加入到需要查找的名称列表中
+	if [ ${#CUSTOM_NAMES[@]} -gt 0 ]; then
+		CUSTOM_NAMES=("$PKG_NAME" "${CUSTOM_NAMES[@]}")  # 将 PKG_NAME 添加到自定义名称列表的开头
+	else
+		CUSTOM_NAMES=("$PKG_NAME")  # 如果没有自定义名称，则只使用 PKG_NAME
+	fi
+
+	# 删除本地可能存在的不同名称的软件包
+	for NAME in "${CUSTOM_NAMES[@]}"; do
+		# 查找匹配的目录
+		echo "Searching directory: $NAME"
+		local FOUND_DIRS=$(find ../feeds/luci/ ../feeds/packages/ -maxdepth 3 -type d -iname "*$NAME*" 2>/dev/null)
+
+		# 删除找到的目录
+		if [ -n "$FOUND_DIRS" ]; then
+			echo "$FOUND_DIRS" | while read -r DIR; do
+				rm -rf "$DIR"
+				echo "Deleted directory: $DIR"
+			done
+		else
+			echo "No directories found matching name: $NAME"
+		fi
+	done
+
+	# 克隆 GitHub 仓库
 	git clone --depth=1 --single-branch --branch $PKG_BRANCH "https://github.com/$PKG_REPO.git"
 
+	# 处理克隆的仓库
 	if [[ $PKG_SPECIAL == "pkg" ]]; then
 		find ./$REPO_NAME/*/ -maxdepth 3 -type d -iname "*$PKG_NAME*" -prune -exec cp -rf {} ./ \;
 		rm -rf ./$REPO_NAME/
@@ -23,7 +50,11 @@ UPDATE_PACKAGE() {
 	fi
 }
 
-#UPDATE_PACKAGE "包名" "项目地址" "项目分支" "pkg/name，可选，pkg为从大杂烩中单独提取包名插件；name为重命名为包名"
+# 调用示例
+# UPDATE_PACKAGE "OpenAppFilter" "destan19/OpenAppFilter" "master" "" "custom_name1 custom_name2"
+# UPDATE_PACKAGE "open-app-filter" "destan19/OpenAppFilter" "master" "" "luci-app-appfilter oaf" 这样会把原有的open-app-filter，luci-app-appfilter，oaf相关组件删除，不会出现coremark错误。
+
+# UPDATE_PACKAGE "包名" "项目地址" "项目分支" "pkg/name，可选，pkg为从大杂烩中单独提取包名插件；name为重命名为包名"
 UPDATE_PACKAGE "argon" "sbwml/luci-theme-argon" "openwrt-24.10"
 # UPDATE_PACKAGE "argon" "jerrykuku/luci-theme-argon" "master"
 # UPDATE_PACKAGE "argon-config" "jerrykuku/luci-app-argon-config" "master"
@@ -33,7 +64,7 @@ UPDATE_PACKAGE "nikki" "nikkinikki-org/OpenWrt-nikki" "main"
 UPDATE_PACKAGE "openclash" "vernesong/OpenClash" "dev" "pkg"
 UPDATE_PACKAGE "passwall" "xiaorouji/openwrt-passwall" "main" "pkg"
 UPDATE_PACKAGE "passwall2" "xiaorouji/openwrt-passwall2" "main" "pkg"
-UPDATE_PACKAGE "passwall-packages" "xiaorouji/openwrt-passwall-packages" "main"
+UPDATE_PACKAGE "passwall-packages" "xiaorouji/openwrt-passwall-packages" "main" "" "chinadns ddns-go hysteria geoview trojan xray v2ray sing"
 # UPDATE_PACKAGE "ssr-plus" "fw876/helloworld" "master"
 
 UPDATE_PACKAGE "ddns-go" "sirpdboy/luci-app-ddns-go" "main"
