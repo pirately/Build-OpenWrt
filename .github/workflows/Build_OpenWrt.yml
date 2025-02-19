@@ -36,17 +36,6 @@ jobs:
         echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
         echo "INFORMATION_NOTICE=${INFORMATION_NOTICE}" >> $GITHUB_ENV 
 
-    - name: Free Disk Space
-      uses: FirelightFlagboy/gh-runner-free-disk-space@main
-      with:
-        android: true
-        dotnet: true
-        haskell: true
-        docker-images: true
-        large-packages: true
-        swap-storage: true
-        tool-cache: true
-
     - name: Initialization Environment
       env:
         DEBIAN_FRONTEND: noninteractive
