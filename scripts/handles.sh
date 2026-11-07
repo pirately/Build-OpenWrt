@@ -1,7 +1,7 @@
 #!/bin/bash
 
 FEEDS_PATH="$GITHUB_WORKSPACE/openwrt/feeds"
-PACKAGE_PATH="$GITHUB_WORKSPACE/openwrt/package/"
+PACKAGE_PATH="./package/"
 
 #修补命令统一入口：FIX <名称> <守卫目录> <命令...>
 #守卫目录不存在时直接跳过，保证在 bash -e 下不中断
