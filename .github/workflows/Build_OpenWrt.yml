@@ -48,7 +48,10 @@ jobs:
         sudo apt-get -yqq clean
         sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)'
         sudo timedatectl set-timezone "Asia/Shanghai"
-
+        sudo mkdir -p /mnt/build_wrt
+        sudo chown $USER:$USER /mnt/build_wrt
+        sudo ln -s /mnt/build_wrt $GITHUB_WORKSPACE/openwrt
+        
     - name: Initialization Values
       run: |
         export WRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")
