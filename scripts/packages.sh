@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 删除自带的packages
-# rm -rf ../feeds/packages/net/{chinadns*,ddns-go,hysteria,geoview,trojan*,xray*,v2ray*,sing*}
+rm -rf ../feeds/packages/net/{chinadns*,ddns-go,hysteria,geoview,trojan*,xray*,v2ray*,sing*}
 
 #安装和更新软件包
 UPDATE_PACKAGE() {
@@ -62,7 +62,7 @@ UPDATE_PACKAGE "nikki" "nikkinikki-org/OpenWrt-nikki" "main"
 UPDATE_PACKAGE "openclash" "vernesong/OpenClash" "dev" "pkg"
 UPDATE_PACKAGE "passwall" "Openwrt-Passwall/openwrt-passwall" "main" "pkg"
 UPDATE_PACKAGE "passwall2" "Openwrt-Passwall/openwrt-passwall2" "main" "pkg"
-# UPDATE_PACKAGE "passwall-packages" "Openwrt-Passwall/openwrt-passwall-packages" "main"
+UPDATE_PACKAGE "passwall-packages" "Openwrt-Passwall/openwrt-passwall-packages" "main"
 # UPDATE_PACKAGE "ssr-plus" "fw876/helloworld" "master"
 
 UPDATE_PACKAGE "ddns-go" "sirpdboy/luci-app-ddns-go" "main"
@@ -119,8 +119,8 @@ UPDATE_VERSION() {
 }
 
 #UPDATE_VERSION "软件包名" "测试版，true，可选，默认为否"
-UPDATE_VERSION "sing-box"
+# UPDATE_VERSION "sing-box"
 
-if [[ $WRT_PLUGIN == *"passwall"* ]]; then
-	UPDATE_VERSION "xray-core"
-fi
+# if [[ $WRT_PLUGIN == *"passwall"* ]]; then
+# 	UPDATE_VERSION "xray-core"
+# fi
