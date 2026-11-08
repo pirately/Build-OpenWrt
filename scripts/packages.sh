@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 删除自带的packages
-rm -rf ../feeds/packages/net/{chinadns*,ddns-go,hysteria,geoview,trojan*,v2ray*,sing*}
+rm -rf ../feeds/packages/net/{chinadns*,hysteria,geoview,trojan*,v2ray*,sing*}
 
 #安装和更新软件包
 UPDATE_PACKAGE() {
