@@ -23,6 +23,25 @@ fi
 echo "CONFIG_PACKAGE_default-settings=y" >> .config
 echo "CONFIG_PACKAGE_default-settings-chn=y" >> .config
 
+# 安装sirpdboy/luci-app-ddns-go
+# 1. 彻底粉碎官方 feeds 树中自带的旧 luci-app-ddns-go 界面包，防止其产生软链接冲突
+# rm -rf feeds/luci/applications/luci-app-ddns-go
+# 2. 调用你的函数，精准下载 sirpdboy 仓库中的 luci-app-ddns-go 文件夹
+# 这里的参数分别对应：分支"main"、仓库地址、临时目录、目标文件夹路径
+# git_sparse_clone "main" "https://github.com/sirpdboy/luci-app-ddns-go.git" "sirpdboy_ddnsgo" "luci-app-ddns-go"
+# 3. 将拉取下来的文件夹安全移动到自定义 package 目录
+# 你的函数执行完后会在当前目录生成一个 luci-app-ddns-go 文件夹，将其移入 package 即可
+# mv -f ./luci-app-ddns-go ./package/
+# 4. 强制在 .config 中注入编译标记
+# 勾选 ImmortalWrt 官方 packages 源自带的 ddns-go 核心二进制
+# echo "CONFIG_PACKAGE_ddns-go=y" >> .config
+# 勾选刚才用你的函数拉取下来的 sirpdboy 全功能界面
+echo "CONFIG_PACKAGE_luci-app-ddns-go=y" >> .config
+# 自动勾选国际化中文语言包
+# echo "CONFIG_PACKAGE_luci-i18n-ddns-go-zh-cn=y" >> .config
+# 强行补充 https 证书支持包，确保核心正常请求域名商 API
+# echo "CONFIG_PACKAGE_ca-certificates=y" >> .config
+
 # 加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
 INFO_FILE="package/base-files/files/etc/openwrt_release"
 sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
