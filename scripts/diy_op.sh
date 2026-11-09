@@ -25,13 +25,13 @@ echo "CONFIG_PACKAGE_default-settings-chn=y" >> .config
 
 # 安装sirpdboy/luci-app-ddns-go
 # 1. 彻底粉碎官方 feeds 树中自带的旧 luci-app-ddns-go 界面包，防止其产生软链接冲突
-# rm -rf feeds/luci/applications/luci-app-ddns-go
+rm -rf feeds/luci/applications/luci-app-ddns-go
 # 2. 调用你的函数，精准下载 sirpdboy 仓库中的 luci-app-ddns-go 文件夹
 # 这里的参数分别对应：分支"main"、仓库地址、临时目录、目标文件夹路径
-# git_sparse_clone "main" "https://github.com/sirpdboy/luci-app-ddns-go.git" "sirpdboy_ddnsgo" "luci-app-ddns-go"
+git_sparse_clone "main" "https://github.com/sirpdboy/luci-app-ddns-go.git" "sirpdboy_ddnsgo" "luci-app-ddns-go"
 # 3. 将拉取下来的文件夹安全移动到自定义 package 目录
 # 你的函数执行完后会在当前目录生成一个 luci-app-ddns-go 文件夹，将其移入 package 即可
-# mv -f ./luci-app-ddns-go ./package/
+mv -f ./luci-app-ddns-go ./package/
 # 4. 强制在 .config 中注入编译标记
 # 勾选 ImmortalWrt 官方 packages 源自带的 ddns-go 核心二进制
 # echo "CONFIG_PACKAGE_ddns-go=y" >> .config
