@@ -158,29 +158,32 @@ jobs:
     - name: Compile the firmware
       id: compile
       env:
-        WXPUSHER_APP_TOKEN: ${{ secrets.WXPUSHER_APP_TOKEN }}
-        WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
+        WXPUSHER_SPT: ${{ secrets.WXPUSHER_SPT }}
       run: |
         cd ./openwrt
         echo -e "$(($(nproc)+1)) thread compile"
         if ! (make -j$(($(nproc)+1)) || make -j1 V=s &>build.log); then
           tail -50 build.log
-          SUMMARY="❌【$WRT_SOURCE】编译失败"
-          CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件失败了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)" \
-            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)")
-
-          JSON_DATA=$(jq -n \
-            --arg token "$WXPUSHER_APP_TOKEN" \
-            --arg summary "$SUMMARY" \
-            --arg content "$CONTENT" \
-            --arg uid "$WXPUSHER_UID" \
-            '{appToken: $token, summary: $summary, content: $content, contentType: 3, uids: [$uid]}')
-
-          curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message" \
-            -H "Content-Type: application/json" \
-            -d "$JSON_DATA"
+          
+          if [[ -n "$WXPUSHER_SPT" ]]; then
+            ERROR_LOG=$(tail -n 15 build.log)
+            SUMMARY="❌【$WRT_SOURCE】编译失败"
+            CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件失败了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)\n\n⚠️最后15行错误日志：\n%s" \
+              "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "${{github.run_number}}" "$(date +%Y年%m月%d日%H时%M分)" "$ERROR_LOG")
+            
+            JSON_DATA=$(jq -n \
+              --arg spt "$WXPUSHER_SPT" \
+              --arg summary "$SUMMARY" \
+              --arg content "$CONTENT" \
+              '{spt: $spt, summary: $summary, content: $content, contentType: 1}')
+              
+            curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message/simple-push" \
+              -H "Content-Type: application/json" \
+              -d "$JSON_DATA"
+          fi
           exit 1
         fi
+
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Machine Information
