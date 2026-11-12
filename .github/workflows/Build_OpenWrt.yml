@@ -149,10 +149,29 @@ jobs:
 
     - name: Compile the firmware
       id: compile
+      env:
+        WXPUSHER_APP_TOKEN: ${{ secrets.WXPUSHER_APP_TOKEN }}
+        WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
       run: |
         cd ./openwrt
         echo -e "$(($(nproc)+1)) thread compile"
-        make -j$(($(nproc)+1)) || make -j1 V=s &>build.log || (tail -50 build.log; curl -k --data title="❌【$WRT_SOURCE】编译失败" --data desp="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件失败了✌️💯💐%0A%0A🎄源码：${WRT_REPO}%0A%0A💕分支：【${WRT_BRANCH}】%0A%0A😋设备：【$WRT_TARGET】%0A%0A🎉插件：【$WRT_PLUGIN】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send"; exit 1)
+        if ! (make -j$(($(nproc)+1)) || make -j1 V=s &>build.log); then
+          tail -50 build.log
+          SUMMARY="❌【$WRT_SOURCE】编译失败"
+          CONTENT="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件失败了✌️💯💐\n\n🎄源码：${WRT_REPO}\n\n💕分支：【${WRT_BRANCH}】\n\n😋设备：【$WRT_TARGET】\n\n🎉插件：【$WRT_PLUGIN】\n\n📯仓库号码：【#${{github.run_number}}号】\n\n🕗编译时间：($(date +%Y年%m月%d日%H时%M分))"
+          
+          JSON_DATA=$(jq -n \
+            --arg token "$WXPUSHER_APP_TOKEN" \
+            --arg summary "$SUMMARY" \
+            --arg content "$CONTENT" \
+            --arg uid "$WXPUSHER_UID" \
+            '{appToken: $token, summary: $summary, content: $content, contentType: 1, uids: [$uid]}')
+            
+          curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message" \
+            -H "Content-Type: application/json" \
+            -d "$JSON_DATA"
+          exit 1
+        fi
 
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -222,10 +241,25 @@ jobs:
         files: ${{ env.FIRMWARE }}/*
 
     - name: Push Information Notice
-      if: env.SCKEY && env.INFORMATION_NOTICE == 'true'
+      if: env.INFORMATION_NOTICE == 'true' && secrets.WXPUSHER_APP_TOKEN != ''
+      env:
+        WXPUSHER_APP_TOKEN: ${{ secrets.WXPUSHER_APP_TOKEN }}
+        WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
       run: |
         if [[ "${{steps.compile.outcome}}" == 'success' ]]; then
-          curl -k --data title="✌️【$WRT_SOURCE】编译成功" --data desp="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件顺利编译完成了✌️💯💐%0A%0A🎄源码：${WRT_REPO}%0A%0A💕分支：【${WRT_BRANCH}】%0A%0A😋设备：【$WRT_TARGET】%0A%0A🔑内核：【${{env.WRT_KVER}}】%0A%0A🎉插件：【$WRT_PLUGIN】%0A%0A📯仓库号码：【#${{github.run_number}}号】%0A%0A🕗编译时间：($(date +%Y年%m月%d日%H时%M分))" "https://sctapi.ftqq.com/$SCKEY.send" 
+          SUMMARY="✌️【$WRT_SOURCE】编译成功"
+          CONTENT="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件顺利编译完成了✌️💯💐\n\n🎄源码：${WRT_REPO}\n\n💕分支：【${WRT_BRANCH}】\n\n😋设备：【$WRT_TARGET】\n\n🔑内核：【${{env.WRT_KVER}}】\n\n🎉插件：【$WRT_PLUGIN】\n\n📯仓库号码：【#${{github.run_number}}号】\n\n🕗编译时间：($(date +%Y年%m月%d日%H时%M分))"
+          
+          JSON_DATA=$(jq -n \
+            --arg token "$WXPUSHER_APP_TOKEN" \
+            --arg summary "$SUMMARY" \
+            --arg content "$CONTENT" \
+            --arg uid "$WXPUSHER_UID" \
+            '{appToken: $token, summary: $summary, content: $content, contentType: 1, uids: [$uid]}')
+            
+          curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message" \
+            -H "Content-Type: application/json" \
+            -d "$JSON_DATA"
         fi
 
     - name: Delete workflow runs
