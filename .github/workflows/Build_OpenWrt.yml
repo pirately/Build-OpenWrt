@@ -241,23 +241,22 @@ jobs:
         files: ${{ env.FIRMWARE }}/*
 
     - name: Push Information Notice
-      if: env.INFORMATION_NOTICE == 'true' && secrets.WXPUSHER_APP_TOKEN != ''
+      if: env.INFORMATION_NOTICE == 'true'
       env:
-        WXPUSHER_APP_TOKEN: ${{ secrets.WXPUSHER_APP_TOKEN }}
-        WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
+        WXPUSHER_SPT: ${{ secrets.WXPUSHER_SPT }}
       run: |
-        if [[ "${{steps.compile.outcome}}" == 'success' ]]; then
+        if [[ "${{steps.compile.outcome}}" == 'success' && -n "$WXPUSHER_SPT" ]]; then
           SUMMARY="✌️【$WRT_SOURCE】编译成功"
-          CONTENT="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件顺利编译完成了✌️💯💐\n\n🎄源码：${WRT_REPO}\n\n💕分支：【${WRT_BRANCH}】\n\n😋设备：【$WRT_TARGET】\n\n🔑内核：【${{env.WRT_KVER}}】\n\n🎉插件：【$WRT_PLUGIN】\n\n📯仓库号码：【#${{github.run_number}}号】\n\n🕗编译时间：($(date +%Y年%m月%d日%H时%M分))"
+          CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件顺利编译完成了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🔑内核：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)" \
+            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "${{env.WRT_KVER}}" "$WRT_PLUGIN" "${{github.run_number}}" "$(date +%Y年%m月%d日%H时%M分)")
           
           JSON_DATA=$(jq -n \
-            --arg token "$WXPUSHER_APP_TOKEN" \
+            --arg spt "$WXPUSHER_SPT" \
             --arg summary "$SUMMARY" \
             --arg content "$CONTENT" \
-            --arg uid "$WXPUSHER_UID" \
-            '{appToken: $token, summary: $summary, content: $content, contentType: 1, uids: [$uid]}')
+            '{spt: $spt, summary: $summary, content: $content, contentType: 1}')
             
-          curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message" \
+          curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message/simple-push" \
             -H "Content-Type: application/json" \
             -d "$JSON_DATA"
         fi
