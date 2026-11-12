@@ -166,21 +166,21 @@ jobs:
         if ! (make -j$(($(nproc)+1)) || make -j1 V=s &>build.log); then
           tail -50 build.log
           SUMMARY="❌【$WRT_SOURCE】编译失败"
-          CONTENT="我亲爱的✨主人✨：您编译的【$WRT_SOURCE】固件失败了✌️💯💐\n\n🎄源码：${WRT_REPO}\n\n💕分支：【${WRT_BRANCH}】\n\n😋设备：【$WRT_TARGET】\n\n🎉插件：【$WRT_PLUGIN】\n\n📯仓库号码：【#${{github.run_number}}号】\n\n🕗编译时间：($(date +%Y年%m月%d日%H时%M分))"
-          
+          CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件失败了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)" \
+            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)")
+
           JSON_DATA=$(jq -n \
             --arg token "$WXPUSHER_APP_TOKEN" \
             --arg summary "$SUMMARY" \
             --arg content "$CONTENT" \
             --arg uid "$WXPUSHER_UID" \
-            '{appToken: $token, summary: $summary, content: $content, contentType: 1, uids: [$uid]}')
-            
+            '{appToken: $token, summary: $summary, content: $content, contentType: 3, uids: [$uid]}')
+
           curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message" \
             -H "Content-Type: application/json" \
             -d "$JSON_DATA"
           exit 1
         fi
-
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Machine Information
@@ -253,17 +253,17 @@ jobs:
       env:
         WXPUSHER_SPT: ${{ secrets.WXPUSHER_SPT }}
       run: |
-        if [[ "${{steps.compile.outcome}}" == 'success' && -n "$WXPUSHER_SPT" ]]; then
+        if [[ "${{ steps.compile.outcome }}" == 'success' && -n "$WXPUSHER_SPT" ]]; then
           SUMMARY="✌️【$WRT_SOURCE】编译成功"
           CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件顺利编译完成了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🔑内核：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)" \
-            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "${{env.WRT_KVER}}" "$WRT_PLUGIN" "${{github.run_number}}" "$(date +%Y年%m月%d日%H时%M分)")
-          
+            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "${{ env.WRT_KVER }}" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)")
+
           JSON_DATA=$(jq -n \
             --arg spt "$WXPUSHER_SPT" \
             --arg summary "$SUMMARY" \
             --arg content "$CONTENT" \
-            '{spt: $spt, summary: $summary, content: $content, contentType: 1}')
-            
+            '{spt: $spt, summary: $summary, content: $content, contentType: 3}')
+
           curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message/simple-push" \
             -H "Content-Type: application/json" \
             -d "$JSON_DATA"
