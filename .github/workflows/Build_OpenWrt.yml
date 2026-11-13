@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - name: Checkout Projects
-      uses: actions/checkout@v6
+      uses: actions/checkout@main
 
     - name: Load Settings.ini
       run: |
@@ -86,7 +86,7 @@ jobs:
 
     - name: Check Caches
       id: check-cache
-      uses: actions/cache@v5
+      uses: actions/cache@main
       with:
         key: ${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ env.WRT_HASH }}
         restore-keys: ${{ env.WRT_VER }}-${{ env.WRT_TARGET }}
@@ -229,7 +229,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware directory
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@main
       if: env.UPLOAD_FIRMWARE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: ${{ env.WRT_VER }}(${{ env.WRT_PLUGIN }})_${{ env.WRT_DATE }}
@@ -244,7 +244,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload Release
-      uses: softprops/action-gh-release@v3
+      uses: softprops/action-gh-release@master
       if: env.UPLOAD_RELEASE == 'true' && steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
