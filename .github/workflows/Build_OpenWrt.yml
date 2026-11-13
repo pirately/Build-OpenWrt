@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - name: Checkout Projects
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Load Settings.ini
       run: |
@@ -86,7 +86,7 @@ jobs:
 
     - name: Check Caches
       id: check-cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         key: ${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ env.WRT_HASH }}
         restore-keys: ${{ env.WRT_VER }}-${{ env.WRT_TARGET }}
@@ -134,7 +134,7 @@ jobs:
     - name: Load custom configuration
       run: |
         set -e
-        git clone https://oauth2:$REPO_TOKEN@github.com/pirately/OpenWrt_Files
+        git clone --depth=1 https://oauth2:$REPO_TOKEN@github.com/pirately/OpenWrt_Files
         cp -f OpenWrt_Files/diy/banner openwrt/package/base-files/files/etc/banner
         sed -i "s/%D %V, %C/OpenWrt by Jeffen ${WRT_TIME}/g" openwrt/package/base-files/files/etc/banner
         cp -rf OpenWrt_Files/diy/* ./ && rm -rf ./banner
@@ -180,7 +180,7 @@ jobs:
 
             SUMMARY="❌【$WRT_SOURCE】编译失败"
             CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件失败了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)\n\n⚠️关键错误日志：\n%b" \
-              "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)" "$ERROR_LOG")
+            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)" "$ERROR_LOG")
 
             JSON_DATA=$(jq -n \
               --arg spt "$WXPUSHER_SPT" \
@@ -229,7 +229,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware directory
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: env.UPLOAD_FIRMWARE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: ${{ env.WRT_VER }}(${{ env.WRT_PLUGIN }})_${{ env.WRT_DATE }}
@@ -239,17 +239,12 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
       run: |
-        cat > release.txt << EOF
-        1、源码：${{ env.WRT_REPO }}
-        2、分支：${{ env.WRT_BRANCH }}
-        3、设备：${{ env.WRT_TARGET }}
-        4、内核：${{ env.WRT_KVER }}
-        -- Build by Jeffen with Github Actions on ${{ env.WRT_DATE }} for ${{ env.WRT_TARGET }} device
-        EOF
+        printf "1、源码：%s\n2、分支：%s\n3、设备：%s\n4、内核：%s\n-- Build by Jeffen with Github Actions on %s for %s device\n" \
+          "${{ env.WRT_REPO }}" "${{ env.WRT_BRANCH }}" "${{ env.WRT_TARGET }}" "${{ env.WRT_KVER }}" "${{ env.WRT_DATE }}" "${{ env.WRT_TARGET }}" > release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       if: env.UPLOAD_RELEASE == 'true' && steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -266,7 +261,7 @@ jobs:
         if [[ "${{ steps.compile.outcome }}" == 'success' && -n "$WXPUSHER_SPT" ]]; then
           SUMMARY="✌️【$WRT_SOURCE】编译成功"
           CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件顺利编译完成了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🔑内核：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)" \
-            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "${{ env.WRT_KVER }}" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)")
+          "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "${{ env.WRT_KVER }}" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)")
 
           JSON_DATA=$(jq -n \
             --arg spt "$WXPUSHER_SPT" \
@@ -279,17 +274,18 @@ jobs:
             -d "$JSON_DATA"
         fi
 
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 1
-        keep_minimum_runs: 3
-
-    - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@master
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      with:
-        keep_latest: 3
-        delete_tags: true
+    - name: Cleanup old workflow runs and releases
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # 保留最近 3 次运行记录，删除更早的记录
+        gh run list --workflow="Build_OpenWrt" --limit 100 --json databaseId -q '.[3:][].databaseId' | while read -r RUN_ID; do
+          gh run delete "$RUN_ID" || true
+        done
+
+        # 如果开启了 Release，保留最近 3 个 Release 及对应 Tag，删除更早的
+        if [[ "${{ env.UPLOAD_RELEASE }}" == "true" ]]; then
+          gh release list --limit 100 --json tagName -q '.[3:][].tagName' | while read -r TAG; do
+            gh release delete "$TAG" --yes --cleanup-tag || true
+          done
+        fi
