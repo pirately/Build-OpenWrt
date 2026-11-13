@@ -1,7 +1,7 @@
 #=================================================
 # Description: Build OpenWrt using GitHub Actions
-# Lisence: MIT
-# Author: Jeffen
+# License: MIT
+# Author: Jeffen (Optimized)
 #=================================================
 
 name: Build_OpenWrt
@@ -12,7 +12,6 @@ on:
 
 env:
   REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
-  SCKEY: ${{ secrets.SCKEY }}
 
 jobs:
   build:
@@ -20,33 +19,31 @@ jobs:
 
     steps:
     - name: Checkout Projects
-      uses: actions/checkout@main
+      uses: actions/checkout@v4
 
     - name: Load Settings.ini
       run: |
         source "${GITHUB_WORKSPACE}/settings/settings.ini"
-        echo "WRT_REPO=${WRT_REPO}" >> $GITHUB_ENV
-        echo "WRT_BRANCH=${WRT_BRANCH}" >> $GITHUB_ENV
-        echo "WRT_TARGET=${WRT_TARGET}" >> $GITHUB_ENV
-        echo "WRT_THEME=${WRT_THEME}" >> $GITHUB_ENV
-        echo "WRT_NAME=${WRT_NAME}" >> $GITHUB_ENV
-        echo "WRT_PLUGIN=${WRT_PLUGIN}" >> $GITHUB_ENV
-        echo "WRT_ROUTE=${WRT_ROUTE}" >> $GITHUB_ENV
-        echo "UPLOAD_FIRMWARE=${UPLOAD_FIRMWARE}" >> $GITHUB_ENV        
-        echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}" >> $GITHUB_ENV
-        echo "INFORMATION_NOTICE=${INFORMATION_NOTICE}" >> $GITHUB_ENV 
+        {
+          echo "WRT_REPO=${WRT_REPO}"
+          echo "WRT_BRANCH=${WRT_BRANCH}"
+          echo "WRT_TARGET=${WRT_TARGET}"
+          echo "WRT_THEME=${WRT_THEME}"
+          echo "WRT_NAME=${WRT_NAME}"
+          echo "WRT_PLUGIN=${WRT_PLUGIN}"
+          echo "WRT_ROUTE=${WRT_ROUTE}"
+          echo "UPLOAD_FIRMWARE=${UPLOAD_FIRMWARE}"
+          echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}"
+          echo "INFORMATION_NOTICE=${INFORMATION_NOTICE}"
+        } >> $GITHUB_ENV
 
     - name: Initialization Environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo apt-get -yqq purge firefox
+        # 清理 Runner 预装的大体积冗余软件，释放 15GB+ 空间防止编译爆盘
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
         sudo apt-get -yqq update
-        sudo apt-get -yqq full-upgrade
-        sudo apt-get -yqq autoremove --purge
-        sudo apt-get -yqq autoclean
-        sudo apt-get -yqq clean
-
         sudo apt-get install -y --no-install-recommends \
           bc bison build-essential bzip2 ca-certificates ccache clang \
           cmake cpio curl device-tree-compiler dos2unix file flex \
@@ -56,28 +53,32 @@ jobs:
           python3-dev python3-packaging python3-pyelftools python3-setuptools qemu-utils rsync swig \
           unzip wget xz-utils zlib1g-dev zstd
 
+        sudo apt-get -yqq autoremove --purge && sudo apt-get -yqq clean
         sudo timedatectl set-timezone "Asia/Shanghai"
-        
+
     - name: Initialization Values
       run: |
-        export WRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")
-        export WRT_TIME=$(TZ=UTC-8 date +%Y.%m.%d)
-        export WRT_SOURCE=$(echo $WRT_REPO | cut -d '/' -f 5-)
-        export WRT_VER=$WRT_SOURCE-$WRT_BRANCH
-        export WRT_TYPE=$(grep -m 1 -oP '^CONFIG_TARGET_\K[\w]+(?=\=y)' ./config/$WRT_TARGET.config | tr '[:lower:]' '[:upper:]')
-        echo "WRT_DATE=$WRT_DATE" >> $GITHUB_ENV
-        echo "WRT_TIME=$WRT_TIME" >> $GITHUB_ENV
-        echo "WRT_SOURCE=$WRT_SOURCE" >> $GITHUB_ENV
-        echo "WRT_VER=$WRT_VER" >> $GITHUB_ENV
-        echo "WRT_TYPE=$WRT_TYPE" >> $GITHUB_ENV
+        WRT_DATE=$(TZ=UTC-8 date +"%y.%m.%d_%H.%M")
+        WRT_TIME=$(TZ=UTC-8 date +%Y.%m.%d)
+        WRT_SOURCE=$(echo "$WRT_REPO" | cut -d '/' -f 5-)
+        WRT_VER="${WRT_SOURCE}-${WRT_BRANCH}"
+        WRT_TYPE=$(grep -m 1 -oP '^CONFIG_TARGET_\K[\w]+(?=\=y)' "./config/${WRT_TARGET}.config" | tr '[:lower:]' '[:upper:]')
+        {
+          echo "WRT_DATE=$WRT_DATE"
+          echo "WRT_TIME=$WRT_TIME"
+          echo "WRT_SOURCE=$WRT_SOURCE"
+          echo "WRT_VER=$WRT_VER"
+          echo "WRT_TYPE=$WRT_TYPE"
+        } >> $GITHUB_ENV
 
     - name: Clone Source Code
       run: |
-        git clone --depth=1 --single-branch --branch $WRT_BRANCH $WRT_REPO ./openwrt
+        git clone --depth=1 --single-branch --branch "$WRT_BRANCH" "$WRT_REPO" ./openwrt
 
-        cd ./openwrt/ && echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
+        cd ./openwrt/
+        echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
 
-        # GitHub Action 移除国内下载源
+        # 移除国内镜像源，避免 GitHub 服务器拉取超时
         PROJECT_MIRRORS_FILE="./scripts/projectsmirrors.json"
         if [ -f "$PROJECT_MIRRORS_FILE" ]; then
           sed -i '/.cn\//d; /tencent/d; /aliyun/d' "$PROJECT_MIRRORS_FILE"
@@ -85,53 +86,60 @@ jobs:
 
     - name: Check Caches
       id: check-cache
-      uses: actions/cache@main
+      uses: actions/cache@v4
       with:
-        key: ${{env.WRT_VER}}-${{env.WRT_TARGET}}-${{env.WRT_HASH}}
-        restore-keys: ${{env.WRT_VER}}-${{env.WRT_TARGET}}
+        key: ${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ env.WRT_HASH }}
+        restore-keys: ${{ env.WRT_VER }}-${{ env.WRT_TARGET }}
         path: |
           ./openwrt/.ccache
           ./openwrt/staging_dir/host*
           ./openwrt/staging_dir/tool*
 
     - name: Update Caches
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         if [ -d "./openwrt/staging_dir" ]; then
           find "./openwrt/staging_dir" -type d -name "stamp" -not -path "*target*" | while read -r DIR; do
             find "$DIR" -type f -exec touch {} +
           done
-
           mkdir -p ./openwrt/tmp && echo "1" > ./openwrt/tmp/.build
-
           echo "toolchain skiped done!"
         else
           echo "caches missed!"
         fi
 
-        if ${{steps.check-cache.outputs.cache-hit != 'true'}}; then
-          CACHE_LIST=$(gh cache list --key "$WRT_VER-$WRT_TARGET" | cut -f 1)
-          for CACHE_KEY in $CACHE_LIST; do
-             gh cache delete $CACHE_KEY
+        if [[ "${{ steps.check-cache.outputs.cache-hit }}" != 'true' ]]; then
+          CACHE_LIST=$(gh cache list --key "$WRT_VER-$WRT_TARGET" --json id -q '.[].id' || true)
+          for CACHE_ID in $CACHE_LIST; do
+             gh cache delete "$CACHE_ID" || true
           done
-
           echo "caches cleanup done!"
         fi
 
     - name: Update Feeds
       run: |
         cd ./openwrt
-
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
+    - name: Fix Rust download-ci-llvm 404 error
+      run: |
+        cd ./openwrt
+        if [ -f "feeds/packages/lang/rust/Makefile" ]; then
+          sed -i 's/--set=llvm.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/g' feeds/packages/lang/rust/Makefile
+          sed -i 's/download-ci-llvm = true/download-ci-llvm = false/g' feeds/packages/lang/rust/Makefile
+        fi
+
     - name: Load custom configuration
       run: |
+        set -e
         git clone https://oauth2:$REPO_TOKEN@github.com/pirately/OpenWrt_Files
         cp -f OpenWrt_Files/diy/banner openwrt/package/base-files/files/etc/banner
         sed -i "s/%D %V, %C/OpenWrt by Jeffen ${WRT_TIME}/g" openwrt/package/base-files/files/etc/banner
         cp -rf OpenWrt_Files/diy/* ./ && rm -rf ./banner
-        cp -f OpenWrt_Files/scripts/diy.sh $GITHUB_WORKSPACE/scripts
-        cp -rf OpenWrt_Files/${{ env.WRT_PLUGIN }}/* ./ && rm -rf OpenWrt_Files
+        cp -f OpenWrt_Files/scripts/diy.sh "$GITHUB_WORKSPACE/scripts"
+        cp -rf "OpenWrt_Files/${WRT_PLUGIN}"/* ./ && rm -rf OpenWrt_Files
         [ -e files ] && mv files openwrt/files
 
         find ./ -maxdepth 3 -type f -iregex ".*\(config\|sh\)$" -exec sed -i 's/\r//' {} \; -exec chmod +x {} \;
@@ -139,21 +147,21 @@ jobs:
     - name: Custom Settings
       run: |
         cd ./openwrt/package/
-
-        $GITHUB_WORKSPACE/scripts/packages.sh
-        $GITHUB_WORKSPACE/scripts/handles.sh
+        "$GITHUB_WORKSPACE/scripts/packages.sh"
+        "$GITHUB_WORKSPACE/scripts/handles.sh"
 
         cd ../
-        cat $GITHUB_WORKSPACE/config/$WRT_TARGET.config $GITHUB_WORKSPACE/config/general.config >> .config
-        $GITHUB_WORKSPACE/scripts/settings.sh
-        $GITHUB_WORKSPACE/scripts/diy.sh
-        $GITHUB_WORKSPACE/scripts/diy_op.sh
-        make defconfig -j$(($(nproc)+1)) && make clean -j$(nproc)
+        cat "$GITHUB_WORKSPACE/config/${WRT_TARGET}.config" "$GITHUB_WORKSPACE/config/general.config" >> .config
+        "$GITHUB_WORKSPACE/scripts/settings.sh"
+        "$GITHUB_WORKSPACE/scripts/diy.sh"
+        "$GITHUB_WORKSPACE/scripts/diy_op.sh"
+        make defconfig -j$(nproc)
 
     - name: Download Packages
       run: |
         cd ./openwrt
-        make download -j$(($(nproc)+1))
+        make download -j$(nproc)
+        find dl -size -1024c -exec ls -l {} \; -exec rm -f {} \;
 
     - name: Compile the firmware
       id: compile
@@ -161,22 +169,25 @@ jobs:
         WXPUSHER_SPT: ${{ secrets.WXPUSHER_SPT }}
       run: |
         cd ./openwrt
-        echo -e "$(($(nproc)+1)) thread compile"
-        if ! (make -j$(($(nproc)+1)) || make -j1 V=s &>build.log); then
+        echo -e "$(nproc) thread compile"
+        if ! (make -j$(nproc) || make -j1 V=s &>build.log); then
           tail -50 build.log
-          
+
           if [[ -n "$WXPUSHER_SPT" ]]; then
-            ERROR_LOG=$(tail -n 15 build.log)
+            KEY_ERRORS=$(grep -iE "error:|failed" build.log | tail -n 10 || true)
+            TAIL_LOG=$(tail -n 10 build.log)
+            ERROR_LOG="${KEY_ERRORS}\n--- 末尾日志 ---\n${TAIL_LOG}"
+
             SUMMARY="❌【$WRT_SOURCE】编译失败"
-            CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件失败了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)\n\n⚠️最后15行错误日志：\n%s" \
-              "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "${{github.run_number}}" "$(date +%Y年%m月%d日%H时%M分)" "$ERROR_LOG")
-            
+            CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件失败了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)\n\n⚠️关键错误日志：\n%b" \
+              "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)" "$ERROR_LOG")
+
             JSON_DATA=$(jq -n \
               --arg spt "$WXPUSHER_SPT" \
               --arg summary "$SUMMARY" \
               --arg content "$CONTENT" \
               '{spt: $spt, summary: $summary, content: $content, contentType: 1}')
-              
+
             curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message/simple-push" \
               -H "Content-Type: application/json" \
               -d "$JSON_DATA"
@@ -187,41 +198,38 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Machine Information
+      if: always()
       run: |
         cd ./openwrt
-
         echo "======================="
         lscpu | grep -E "name|Core|Thread"
         echo "======================="
         df -h
-        echo "======================="
-        du -h --max-depth=1
         echo "======================="
 
     - name: Organize files
       id: organize
       if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
-        cd ./openwrt && mkdir ./upload
+        cd ./openwrt && mkdir -p ./upload
         cp -f ./.config ./upload/Config_"${WRT_VER}(${WRT_PLUGIN})_${WRT_DATE}".config
         KVER=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)
         find ./bin/targets/ -iregex ".*\(buildinfo\|json\|manifest\|sha256sums\|packages\|bin\|rootfs.img.gz\|combined.img.gz\)$" -exec rm -rf {} +
 
         for FILE in $(find ./bin/targets/ -type f -iname "*$WRT_TYPE*") ; do
-          EXT=$(basename $FILE | cut -d '.' -f 2-)
-          NAME=$(basename $FILE | cut -d '.' -f 1 | grep -io "\($WRT_TYPE\).*")
-          NEW_FILE="$WRT_VER"_"$NAME"_"$WRT_DATE"."$EXT"
-          mv -f $FILE ./upload/$NEW_FILE
+          EXT=$(basename "$FILE" | cut -d '.' -f 2-)
+          NAME=$(basename "$FILE" | cut -d '.' -f 1 | grep -io "\($WRT_TYPE\).*")
+          NEW_FILE="${WRT_VER}_${NAME}_${WRT_DATE}.${EXT}"
+          mv -f "$FILE" "./upload/$NEW_FILE"
         done
 
         find ./bin/targets/ -type f -exec mv -f {} ./upload/ \;
-        make clean -j$(nproc)
         echo "WRT_KVER=${KVER:-none}" >> $GITHUB_ENV
         echo "FIRMWARE=$PWD/upload" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware directory
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@v4
       if: env.UPLOAD_FIRMWARE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: ${{ env.WRT_VER }}(${{ env.WRT_PLUGIN }})_${{ env.WRT_DATE }}
@@ -231,8 +239,7 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
       run: |
-        touch release.txt
-        cat >> release.txt << EOF    
+        cat > release.txt << EOF
         1、源码：${{ env.WRT_REPO }}
         2、分支：${{ env.WRT_BRANCH }}
         3、设备：${{ env.WRT_TARGET }}
@@ -242,7 +249,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload Release
-      uses: softprops/action-gh-release@master
+      uses: softprops/action-gh-release@v2
       if: env.UPLOAD_RELEASE == 'true' && steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
