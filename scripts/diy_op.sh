@@ -25,8 +25,8 @@ echo "CONFIG_PACKAGE_default-settings-chn=y" >> .config
 
 # 加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
 INFO_FILE="package/base-files/files/etc/openwrt_release"
-sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' $WRT_TIME'/g" $INFO_FILE
-sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='OpenWrt by Jeffen'/g" $INFO_FILE
+sed -i "s/DISTRIB_REVISION='[^']*'/DISTRIB_REVISION=' $WRT_TIME'/g" "$INFO_FILE"
+sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='ImmortalWrt by Jeffen '/g" "$INFO_FILE"
 
 # 相关插件
 if [[ $WRT_PLUGIN == "passwall" ]] ; then
@@ -34,8 +34,9 @@ if [[ $WRT_PLUGIN == "passwall" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
 fi
 if [[ $WRT_PLUGIN == "passwall2" ]] ; then
-  # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall2=y" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_SingBox=y" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_Xray=y" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_V2ray_Plugin=n" >> .config
   echo "CONFIG_PACKAGE_v2ray-plugin=n" >> .config
 fi
@@ -47,35 +48,20 @@ if [[ $WRT_PLUGIN == "ssrplus" ]] ; then
 fi
 
 UCI_FILE="./package/base-files/files/etc/uci-defaults"
-SH_PATH="$GITHUB_WORKSPACE/openwrt/files/etc/init.d"
-mkdir -p $SH_PATH
 
 # openclash或nikki插件
 if [[ $WRT_PLUGIN == "openclash" || $WRT_PLUGIN == "nikki" ]]; then
-  sed -i '/EOI/i set dhcp.@dnsmasq[0].dns_redirect="0"' $UCI_FILE/99-custom
-  if [[ $WRT_PLUGIN == "openclash" ]]; then
-    # rm -rf feeds/luci/applications/luci-app-openclash
-    echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
-
-    # 设置openclash启动，否则第一次运行需要手动点
-    OCL_FILE="$SH_PATH/set_openclash.sh"
-    # 创建目录并写入脚本内容
-    cat << 'EOF' > $OCL_FILE
-#!/bin/sh /etc/rc.common
-# Copyright (C) 2024 OpenWRT
-# This script will enable OpenClash and reboot the device
-
-START=99
-start() {
-  if ! grep -q "option enable '1'" /etc/config/openclash; then
-    sed -i "s/option enable '0'/option enable '1'/g" /etc/config/openclash && reboot
-    rm -f /etc/init.d/set_openclash.sh
+  if [ -f "$UCI_FILE/99-custom" ]; then
+    sed -i '/EOI/i\set dhcp.@dnsmasq.dns_redirect='\''0'\''' "$UCI_FILE/99-custom"
   fi
-}
-EOF
-    # 赋予脚本可执行权限
-    chmod +x $OCL_FILE
+
+  if [[ $WRT_PLUGIN == "openclash" ]]; then
+    echo "CONFIG_PACKAGE_luci-app-openclash=y" >> .config
+    if [ -f "$UCI_FILE/99-custom" ]; then
+      sed -i '/EOI/i\set openclash.config.enable='\''1'\''' "$UCI_FILE/99-custom"
+    fi
   elif [[ $WRT_PLUGIN == "nikki" ]]; then
-    echo "CONFIG_PACKAGE_luci-app-nikki=y" >> ./.config
+    echo "CONFIG_PACKAGE_luci-app-nikki=y" >> .config
   fi
 fi
+
