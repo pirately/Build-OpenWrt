@@ -31,7 +31,6 @@ jobs:
           echo "WRT_THEME=${WRT_THEME}"
           echo "WRT_NAME=${WRT_NAME}"
           echo "WRT_PLUGIN=${WRT_PLUGIN}"
-          echo "WRT_ROUTE=${WRT_ROUTE}"
           echo "UPLOAD_FIRMWARE=${UPLOAD_FIRMWARE}"
           echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}"
           echo "INFORMATION_NOTICE=${INFORMATION_NOTICE}"
