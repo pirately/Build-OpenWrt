@@ -2,7 +2,7 @@
 set -e
 
 # 1. 清理官方 feeds 中与 PassWall2 / Nikki 冲突的旧版核心包（已修正为 ./feeds 相对路径）
-rm -rf ./feeds/packages/net/{chinadns*,hysteria,geoview,trojan*,v2ray*,sing*,xray*}
+rm -rf ./feeds/packages/net/{chinadns*,hysteria,geoview,trojan*,v2ray*}
 
 # 2. 安装和更新软件包函数
 UPDATE_PACKAGE() {
