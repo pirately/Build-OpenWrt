@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
-# 1. 清理官方 feeds 中与 PassWall2 / Nikki 冲突的旧版核心包（已修正为 ./feeds 相对路径）
-rm -rf ./feeds/packages/net/{chinadns*,hysteria,geoview,trojan*,v2ray*}
+# 强制确保工作目录在 openwrt 源码根目录（防止工作流在 package 目录下调用）
+[ -d "./feeds" ] || cd ..
+
+# 1. 清理官方 feeds 中与 PassWall2 / Nikki 冲突的旧版核心包
+rm -rf ./feeds/packages/net/{chinadns*,hysteria,geoview,trojan*,v2ray*,sing*,xray*}
 
 # 2. 安装和更新软件包函数
 UPDATE_PACKAGE() {
@@ -37,6 +40,8 @@ UPDATE_PACKAGE() {
 }
 
 # 3. 拉取现代 LuCI 主题（已剔除不兼容 master 的旧版主题）
+# UPDATE_PACKAGE "argon" "jerrykuku/luci-theme-argon" "master"
+# UPDATE_PACKAGE "argon-config" "jerrykuku/luci-app-argon-config" "master"
 UPDATE_PACKAGE "aurora" "eamonxg/luci-theme-aurora" "master"
 UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 UPDATE_PACKAGE "shadcn" "eamonxg/luci-theme-shadcn" "main"
@@ -55,3 +60,7 @@ UPDATE_PACKAGE "luci-app-easytier" "EasyTier/luci-app-easytier" "main"
 UPDATE_PACKAGE "natmapt" "muink/openwrt-natmapt" "master"
 UPDATE_PACKAGE "stuntman" "muink/openwrt-stuntman" "master"
 UPDATE_PACKAGE "luci-app-natmapt" "muink/luci-app-natmapt" "master"
+
+# 6. 刷新索引，消除删除旧包后留下的死链接
+./scripts/feeds update -i
+./scripts/feeds install -a -f

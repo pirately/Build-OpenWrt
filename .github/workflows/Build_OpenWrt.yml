@@ -16,6 +16,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
 
     steps:
     - name: Checkout Projects
@@ -41,7 +44,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         # 清理 Runner 预装的大体积冗余软件，释放 15GB+ 空间防止编译爆盘
-        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/*
         sudo apt-get -yqq update
         sudo apt-get install -y --no-install-recommends \
           bc bison build-essential bzip2 ca-certificates ccache clang \
@@ -154,6 +157,8 @@ jobs:
         "$GITHUB_WORKSPACE/scripts/settings.sh"
         "$GITHUB_WORKSPACE/scripts/diy.sh"
         "$GITHUB_WORKSPACE/scripts/diy_op.sh"
+
+        echo "CONFIG_CCACHE=y" >> .config
         make defconfig -j$(nproc)
 
     - name: Download Packages
@@ -213,7 +218,7 @@ jobs:
         cd ./openwrt && mkdir -p ./upload
         cp -f ./.config ./upload/Config_"${WRT_VER}(${WRT_PLUGIN})_${WRT_DATE}".config
         KVER=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)
-        find ./bin/targets/ -iregex ".*\(buildinfo\|json\|manifest\|sha256sums\|packages\|bin\|rootfs.img.gz\|combined.img.gz\)$" -exec rm -rf {} +
+        find ./bin/targets/ -iregex ".*\(buildinfo\|json\|manifest\|sha256sums\|packages\|bin\|rootfs.img.gz\|combined.img.gz\|targz-rootfs.tar.gz\)$" -exec rm -rf {} +
 
         for FILE in $(find ./bin/targets/ -type f -iname "*$WRT_TYPE*") ; do
           EXT=$(basename "$FILE" | cut -d '.' -f 2-)
@@ -278,8 +283,10 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # 保留最近 3 次运行记录，删除更早的记录
-        gh run list --workflow="Build_OpenWrt" --limit 100 --json databaseId -q '.[3:][].databaseId' | while read -r RUN_ID; do
-          gh run delete "$RUN_ID" || true
+        gh run list --workflow="Build_OpenWrt" --status completed --limit 100 --json databaseId -q '.[3:][].databaseId' | while read -r RUN_ID; do
+          if [[ "$RUN_ID" != "${{ github.run_id }}" ]]; then
+            gh run delete "$RUN_ID" || true
+          fi
         done
 
         # 如果开启了 Release，保留最近 3 个 Release 及对应 Tag，删除更早的
