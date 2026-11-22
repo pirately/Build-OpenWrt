@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# 强制确保工作目录在 openwrt 源码根目录（防止工作流在 package 目录下调用）
-[ -d "./feeds" ] || cd ..
+# 强制确保工作目录在 openwrt 源码根目录
+[ -f "./scripts/feeds" ] || cd ..
 
 # 1. 清理官方 feeds 中与 PassWall2 / Nikki 冲突的旧版核心包
 rm -rf ./feeds/packages/net/{chinadns*,hysteria,geoview,trojan*,v2ray*,sing*,xray*}
