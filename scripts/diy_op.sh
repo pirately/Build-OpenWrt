@@ -25,8 +25,9 @@ echo "CONFIG_PACKAGE_default-settings-chn=y" >> .config
 
 # 1. 修改固件版本信息
 # 加入作者信息, %Y表示4位数年份如2023, %y表示2位数年份如23
-sed -i "s/DISTRIB_REVISION='[^']*'/DISTRIB_REVISION=' $WRT_TIME'/g" package/base-files/files/etc/openwrt_release
-sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='ImmortalWrt by Jeffen '/g" package/base-files/Makefile
+INFO_FILE="package/base-files/files/etc/openwrt_release"
+sed -i "s/DISTRIB_REVISION='[^']*'/DISTRIB_REVISION=' $WRT_TIME'/g" "$INFO_FILE"
+sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='ImmortalWrt by Jeffen '/g" "$INFO_FILE"
 # 2. 修改内核编译者信息（建议放在 make defconfig 之后）
 echo 'CONFIG_KERNEL_BUILD_USER="Jeffen"' >> .config
 echo 'CONFIG_KERNEL_BUILD_DOMAIN="ImmortalWrt"' >> .config
