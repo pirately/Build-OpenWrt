@@ -136,7 +136,7 @@ jobs:
     - name: Load custom configuration
       run: |
         set -e
-        git clone --depth=1 https://oauth2:$REPO_TOKEN@github.com/pirately/OpenWrt_Files
+        git clone --depth=1 https://x-access-token:$REPO_TOKEN@github.com/pirately/OpenWrt_Files
         cp -f OpenWrt_Files/diy/banner openwrt/package/base-files/files/etc/banner
         sed -i "s/%D %V, %C/OpenWrt by Jeffen ${WRT_TIME}/g" openwrt/package/base-files/files/etc/banner
         cp -rf OpenWrt_Files/diy/* ./ && rm -rf ./banner

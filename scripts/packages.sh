@@ -3,9 +3,7 @@ set -e
 
 # 强制确保工作目录在 openwrt 源码根目录
 [ -f "./scripts/feeds" ] || cd ..
-
-# 1. 清理官方 feeds 中与 PassWall2 / Nikki 冲突的旧版核心包
-rm -rf ./feeds/packages/net/{chinadns*,hysteria,geoview,trojan*,v2ray*,sing*,xray*}
+ROOT="$PWD"
 
 # 2. 安装和更新软件包函数
 UPDATE_PACKAGE() {
@@ -48,9 +46,6 @@ UPDATE_PACKAGE "shadcn" "eamonxg/luci-theme-shadcn" "main"
 UPDATE_PACKAGE "vantage" "anothaDev/luci-theme-vantage" "main"
 
 # 4. 拉取代理插件（直接克隆仓库，无需 pkg 提取）
-UPDATE_PACKAGE "momo" "nikkinikki-org/OpenWrt-momo" "main"
-UPDATE_PACKAGE "nikki" "nikkinikki-org/OpenWrt-nikki" "main"
-UPDATE_PACKAGE "openclash" "vernesong/OpenClash" "dev"
 UPDATE_PACKAGE "passwall" "Openwrt-Passwall/openwrt-passwall" "main"
 UPDATE_PACKAGE "passwall2" "Openwrt-Passwall/openwrt-passwall2" "main"
 UPDATE_PACKAGE "passwall-packages" "Openwrt-Passwall/openwrt-passwall-packages" "main"
@@ -60,6 +55,21 @@ UPDATE_PACKAGE "luci-app-easytier" "EasyTier/luci-app-easytier" "main"
 UPDATE_PACKAGE "natmapt" "muink/openwrt-natmapt" "master"
 UPDATE_PACKAGE "stuntman" "muink/openwrt-stuntman" "master"
 UPDATE_PACKAGE "luci-app-natmapt" "muink/luci-app-natmapt" "master"
+
+# Nikki 必须按官方 feed 方式集成。不要把整个仓库嵌套 clone 到 package/ 下，
+# 否则 Makefile 层级可能导致 feeds/package 扫描不到。
+grep -q '^src-git nikki ' feeds.conf.default ||
+    echo 'src-git nikki https://github.com/nikkinikki-org/OpenWrt-nikki.git;main' >> feeds.conf.default
+
+# AdGuardHome LuCI 管理插件。核心程序由插件首次启用时下载/更新。
+grep -q '^src-git adguardhome ' feeds.conf.default ||
+    echo 'src-git adguardhome https://github.com/kenzok78/luci-app-adguardhome.git' >> feeds.conf.default
+
+./scripts/feeds update nikki
+./scripts/feeds install -a -f -p nikki
+
+./scripts/feeds update adguardhome
+./scripts/feeds install -a -f -p adguardhome
 
 # 6. 刷新索引，消除删除旧包后留下的死链接
 ./scripts/feeds update -i
