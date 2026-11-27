@@ -43,9 +43,9 @@ jobs:
     - name: Get Commit Hash
       id: getHash
       run: |
-        git clone --depth 1 $WRT_REPO -b $WRT_BRANCH ./openwrt
-        cd openwrt
-        echo "commitHash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+        HASH=$(git ls-remote --exit-code "$WRT_REPO" "refs/heads/$WRT_BRANCH" | awk '{print $1}')
+        [[ -n "$HASH" ]] || exit 1
+        echo "commitHash=$HASH" >> "$GITHUB_OUTPUT"
 
     - name: Compare Commit Hash
       id: cacheHash
@@ -69,5 +69,5 @@ jobs:
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main
       with:
-        retain_days: 1
+        retain_days: 2
         keep_minimum_runs: 1

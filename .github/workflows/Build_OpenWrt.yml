@@ -10,8 +10,9 @@ on:
   repository_dispatch:
   workflow_dispatch:
 
-env:
-  REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+concurrency:
+  group: build-openwrt-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -23,6 +24,9 @@ jobs:
     steps:
     - name: Checkout Projects
       uses: actions/checkout@main
+
+      with:
+        persist-credentials: false
 
     - name: Load Settings.ini
       run: |
@@ -37,6 +41,11 @@ jobs:
           echo "UPLOAD_FIRMWARE=${UPLOAD_FIRMWARE}"
           echo "UPLOAD_RELEASE=${UPLOAD_RELEASE}"
           echo "INFORMATION_NOTICE=${INFORMATION_NOTICE}"
+          echo "ENABLE_ADGUARDHOME=$ENABLE_ADGUARDHOME"
+          echo "ENABLE_DL_CACHE=${ENABLE_DL_CACHE}"
+          echo "ENABLE_CCACHE=${ENABLE_CCACHE}"
+          echo "CCACHE_SIZE=${CCACHE_SIZE}"
+          echo "ARTIFACT_RETENTION_DAYS=${ARTIFACT_RETENTION_DAYS}"
         } >> $GITHUB_ENV
 
     - name: Initialization Environment
@@ -86,38 +95,32 @@ jobs:
           sed -i '/.cn\//d; /tencent/d; /aliyun/d' "$PROJECT_MIRRORS_FILE"
         fi
 
-    - name: Check Caches
-      id: check-cache
-      uses: actions/cache@main
+    - name: Restore Download Cache
+      if: env.ENABLE_DL_CACHE == 'true'
+      uses: actions/cache@v5
       with:
-        key: ${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ env.WRT_HASH }}
-        restore-keys: ${{ env.WRT_VER }}-${{ env.WRT_TARGET }}
-        path: |
-          ./openwrt/.ccache
-          ./openwrt/staging_dir/host*
-          ./openwrt/staging_dir/tool*
+        path: openwrt/dl
+        key: dl-v2-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: |
+          dl-v2-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
 
-    - name: Update Caches
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Restore Compiler Cache
+      if: env.ENABLE_CCACHE == 'true'
+      uses: actions/cache@v5
+      with:
+        path: openwrt/.ccache
+        key: ccache-v2-ubuntu24-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: |
+          ccache-v2-ubuntu24-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
+
+    - name: Configure Compiler Cache
+      if: env.ENABLE_CCACHE == 'true'
       run: |
-        if [ -d "./openwrt/staging_dir" ]; then
-          find "./openwrt/staging_dir" -type d -name "stamp" -not -path "*target*" | while read -r DIR; do
-            find "$DIR" -type f -exec touch {} +
-          done
-          mkdir -p ./openwrt/tmp && echo "1" > ./openwrt/tmp/.build
-          echo "toolchain skiped done!"
-        else
-          echo "caches missed!"
-        fi
-
-        if [[ "${{ steps.check-cache.outputs.cache-hit }}" != 'true' ]]; then
-          CACHE_LIST=$(gh cache list --key "$WRT_VER-$WRT_TARGET" --json id -q '.[].id' || true)
-          for CACHE_ID in $CACHE_LIST; do
-             gh cache delete "$CACHE_ID" || true
-          done
-          echo "caches cleanup done!"
-        fi
+        export CCACHE_DIR="$GITHUB_WORKSPACE/openwrt/.ccache"
+        mkdir -p "$CCACHE_DIR"
+        ccache --max-size="$CCACHE_SIZE"
+        ccache --zero-stats
+        echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
 
     - name: Update Feeds
       run: |
@@ -125,15 +128,9 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: Fix Rust download-ci-llvm 404 error
-      run: |
-        cd ./openwrt
-        if [ -f "feeds/packages/lang/rust/Makefile" ]; then
-          sed -i 's/--set=llvm.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/g' feeds/packages/lang/rust/Makefile
-          sed -i 's/download-ci-llvm = true/download-ci-llvm = false/g' feeds/packages/lang/rust/Makefile
-        fi
-
     - name: Load custom configuration
+      env:
+        REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
       run: |
         set -e
         git clone --depth=1 https://x-access-token:$REPO_TOKEN@github.com/pirately/OpenWrt_Files
@@ -142,7 +139,14 @@ jobs:
         cp -rf OpenWrt_Files/diy/* ./ && rm -rf ./banner
         cp -f OpenWrt_Files/scripts/diy.sh "$GITHUB_WORKSPACE/scripts"
         cp -rf "OpenWrt_Files/${WRT_PLUGIN}"/* ./ && rm -rf OpenWrt_Files
-        [ -e files ] && mv files openwrt/files
+        
+        if [ -d files ]; then
+          mkdir -p openwrt/files
+          cp -a files/. openwrt/files/
+        fi
+        if [[ "$ENABLE_ADGUARDHOME" != true ]]; then
+          rm -rf openwrt/files/etc/adguardhome openwrt/files/etc/config/adguardhome
+        fi
 
         find ./ -maxdepth 3 -type f -iregex ".*\(config\|sh\)$" -exec sed -i 's/\r//' {} \; -exec chmod +x {} \;
 
@@ -158,53 +162,86 @@ jobs:
         "$GITHUB_WORKSPACE/scripts/diy.sh"
         "$GITHUB_WORKSPACE/scripts/diy_op.sh"
 
-        echo "CONFIG_CCACHE=y" >> .config
+        if [[ "$ENABLE_CCACHE" == true ]]; then
+          echo "CONFIG_CCACHE=y" >> .config
+        else
+          echo "# CONFIG_CCACHE is not set" >> .config
+        fi
         make defconfig -j$(nproc)
+
+    - name: Fix Rust CI LLVM download error
+      shell: bash
+      run: |
+        set -Eeuo pipefail
+        cd openwrt
+
+        RUST_MAKEFILE="feeds/packages/lang/rust/Makefile"
+        if [[ ! -f "$RUST_MAKEFILE" ]]; then
+          echo "Rust package Makefile not present in this feed snapshot; no patch needed."
+          exit 0
+        fi
+
+        echo "===== Rust Makefile before patch ====="
+        grep -nE 'download-ci-llvm|x.py' "$RUST_MAKEFILE" || true
+
+        # Avoid stale/missing Rust CI LLVM artifacts (common HTTP 404 failure).
+        sed -i -E \
+          -e 's/--set=llvm\.download-ci-llvm=(true|if-unchanged)/--set=llvm.download-ci-llvm=false/g' \
+          -e 's/download-ci-llvm[[:space:]]*=[[:space:]]*true/download-ci-llvm = false/g' \
+          "$RUST_MAKEFILE"
+
+        if grep -qE -- '--set=llvm\.download-ci-llvm=(true|if-unchanged)|download-ci-llvm[[:space:]]*=[[:space:]]*true' "$RUST_MAKEFILE"; then
+          echo "Rust LLVM CI download option remains enabled; aborting." >&2
+          exit 1
+        fi
+
+        if grep -q -- '--set=llvm.download-ci-llvm=false' "$RUST_MAKEFILE"; then
+          echo "Rust LLVM CI download disabled."
+        else
+          echo "No matching option found; leaving upstream Makefile unchanged."
+        fi
+        echo "===== Rust Makefile after patch ====="
+        grep -nE 'download-ci-llvm|x.py' "$RUST_MAKEFILE" || true
 
     - name: Download Packages
       run: |
         cd ./openwrt
         make download -j$(nproc)
-        find dl -size -1024c -exec ls -l {} \; -exec rm -f {} \;
+        find dl -type f -empty -print -delete
 
     - name: Compile the firmware
       id: compile
-      env:
-        WXPUSHER_SPT: ${{ secrets.WXPUSHER_SPT }}
       run: |
         cd ./openwrt
         echo -e "$(nproc) thread compile"
         if ! (make -j$(nproc) || make -j1 V=s &>build.log); then
           tail -50 build.log
 
-          if [[ -n "$WXPUSHER_SPT" ]]; then
-            KEY_ERRORS=$(grep -iE "error:|failed" build.log | tail -n 10 || true)
-            TAIL_LOG=$(tail -n 10 build.log)
-            ERROR_LOG="${KEY_ERRORS}\n--- 末尾日志 ---\n${TAIL_LOG}"
+          # 提取关键错误日志并存入多行环境变量，供后续统一推送步骤使用
+          KEY_ERRORS=$(grep -iE "error:|failed" build.log | tail -n 10 || true)
+          TAIL_LOG=$(tail -n 10 build.log)
+          {
+            echo "ERROR_LOG<<EOF"
+            echo "${KEY_ERRORS}"
+            echo "--- 末尾日志 ---"
+            echo "${TAIL_LOG}"
+            echo "EOF"
+          } >> $GITHUB_ENV
 
-            SUMMARY="❌【$WRT_SOURCE】编译失败"
-            CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件失败了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)\n\n⚠️关键错误日志：\n%b" \
-            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)" "$ERROR_LOG")
-
-            JSON_DATA=$(jq -n \
-              --arg spt "$WXPUSHER_SPT" \
-              --arg summary "$SUMMARY" \
-              --arg content "$CONTENT" \
-              '{spt: $spt, summary: $summary, content: $content, contentType: 1}')
-
-            curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message/simple-push" \
-              -H "Content-Type: application/json" \
-              -d "$JSON_DATA"
-          fi
           exit 1
         fi
 
         echo "status=success" >> $GITHUB_OUTPUT
 
+    - name: Cache Statistics
+      if: always() && env.ENABLE_CCACHE == 'true'
+      run: |
+        ccache --show-stats || true
+        du -sh openwrt/dl openwrt/.ccache || true
+
     - name: Machine Information
       if: always()
       run: |
-        cd ./openwrt
         echo "======================="
         lscpu | grep -E "name|Core|Thread"
         echo "======================="
@@ -238,6 +275,9 @@ jobs:
       with:
         name: ${{ env.WRT_VER }}(${{ env.WRT_PLUGIN }})_${{ env.WRT_DATE }}
         path: ${{ env.FIRMWARE }}
+        compression-level: 0
+        retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+        if-no-files-found: error
 
     - name: Generate Release
       id: tag
@@ -258,25 +298,38 @@ jobs:
         files: ${{ env.FIRMWARE }}/*
 
     - name: Push Information Notice
-      if: env.INFORMATION_NOTICE == 'true'
+      if: always() && env.INFORMATION_NOTICE == 'true' && !cancelled()
       env:
         WXPUSHER_SPT: ${{ secrets.WXPUSHER_SPT }}
+        COMPILE_STATUS: ${{ steps.compile.outcome }}
+        RUN_NUMBER: ${{ github.run_number }}
       run: |
-        if [[ "${{ steps.compile.outcome }}" == 'success' && -n "$WXPUSHER_SPT" ]]; then
-          SUMMARY="✌️【$WRT_SOURCE】编译成功"
-          CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件顺利编译完成了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🔑内核：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)" \
-          "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "${{ env.WRT_KVER }}" "$WRT_PLUGIN" "${{ github.run_number }}" "$(date +%Y年%m月%d日%H时%M分)")
-
-          JSON_DATA=$(jq -n \
-            --arg spt "$WXPUSHER_SPT" \
-            --arg summary "$SUMMARY" \
-            --arg content "$CONTENT" \
-            '{spt: $spt, summary: $summary, content: $content, contentType: 3}')
-
-          curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message/simple-push" \
-            -H "Content-Type: application/json" \
-            -d "$JSON_DATA"
+        if [[ -z "$WXPUSHER_SPT" ]]; then
+          echo "WXPUSHER_SPT 未配置，跳过推送"
+          exit 0
         fi
+
+        NOW_TIME=$(date +%Y年%m月%d日%H时%M分)
+
+        if [[ "$COMPILE_STATUS" == 'success' ]]; then
+          SUMMARY="✌️【${WRT_SOURCE}】编译成功"
+          CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件顺利编译完成了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🔑内核：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)" \
+            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "${WRT_KVER:-none}" "$WRT_PLUGIN" "$RUN_NUMBER" "$NOW_TIME")
+        else
+          SUMMARY="❌【${WRT_SOURCE}】编译失败"
+          CONTENT=$(printf "我亲爱的✨主人✨：您编译的【%s】固件失败了✌️💯💐\n\n🎄源码：%s\n\n💕分支：【%s】\n\n😋设备：【%s】\n\n🎉插件：【%s】\n\n📯仓库号码：【#%s号】\n\n🕗编译时间：(%s)\n\n⚠️关键错误日志：\n%s" \
+            "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "$RUN_NUMBER" "$NOW_TIME" "${ERROR_LOG:-未捕获到详细错误日志，请前往 Actions 页面查看}")
+        fi
+
+        JSON_DATA=$(jq -n \
+          --arg spt "$WXPUSHER_SPT" \
+          --arg summary "$SUMMARY" \
+          --arg content "$CONTENT" \
+          '{spt: $spt, summary: $summary, content: $content, contentType: 1}')
+
+        curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message/simple-push" \
+          -H "Content-Type: application/json" \
+          -d "$JSON_DATA"
 
     - name: Cleanup old workflow runs and releases
       env:
