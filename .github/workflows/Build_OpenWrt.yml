@@ -45,6 +45,8 @@ jobs:
           echo "ENABLE_DL_CACHE=${ENABLE_DL_CACHE}"
           echo "ENABLE_CCACHE=${ENABLE_CCACHE}"
           echo "CCACHE_SIZE=${CCACHE_SIZE}"
+          echo "ENABLE_GO_CACHE=${ENABLE_GO_CACHE:-true}"
+          echo "ENABLE_TOOLCHAIN_CACHE=${ENABLE_TOOLCHAIN_CACHE:-false}"
           echo "ARTIFACT_RETENTION_DAYS=${ARTIFACT_RETENTION_DAYS}"
         } >> $GITHUB_ENV
 
@@ -75,17 +77,13 @@ jobs:
         WRT_VER="${WRT_SOURCE}-${WRT_BRANCH}"
         WRT_TYPE=$(grep -m 1 -oP '^CONFIG_TARGET_\K[\w]+(?=\=y)' "./config/${WRT_TARGET}.config" | tr '[:lower:]' '[:upper:]')
 
-        # 自动获取 Runner 系统及版本
-        source /etc/os-release
-        RUNNER_OS_VERSION="${ID}-${VERSION_ID}"
-
         {
           echo "WRT_DATE=$WRT_DATE"
           echo "WRT_TIME=$WRT_TIME"
           echo "WRT_SOURCE=$WRT_SOURCE"
           echo "WRT_VER=$WRT_VER"
           echo "WRT_TYPE=$WRT_TYPE"
-          echo "RUNNER_OS_VERSION=$RUNNER_OS_VERSION"
+          echo "RUNNER_OS_VERSION=$( . /etc/os-release; printf '%s-%s' "$ID" "$VERSION_ID")"
         } >> "$GITHUB_ENV"
 
     - name: Clone Source Code
@@ -102,46 +100,36 @@ jobs:
         fi
 
     - name: Restore Download Cache
+      id: dl_cache
       if: env.ENABLE_DL_CACHE == 'true'
-      uses: actions/cache@v5
+      uses: actions/cache/restore@v5
       with:
         path: openwrt/dl
-        key: dl-v2-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ github.run_id }}-${{ github.run_attempt }}
+        key: dl-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ github.run_id }}-${{ github.run_attempt }}
         restore-keys: |
-          dl-v2-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
+          dl-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
 
     - name: Restore Compiler Cache
+      id: compiler_cache
       if: env.ENABLE_CCACHE == 'true'
-      uses: actions/cache@v5
+      uses: actions/cache/restore@v5
       with:
         path: openwrt/.ccache
-        key: ccache-v3-${{ env.RUNNER_OS_VERSION }}-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ github.run_id }}-${{ github.run_attempt }}
+        key: ccache-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ github.run_id }}-${{ github.run_attempt }}
         restore-keys: |
-          ccache-v3-${{ env.RUNNER_OS_VERSION }}-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
+          ccache-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
+          ccache-${{ env.RUNNER_OS_VERSION }}-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
 
     - name: Configure Compiler Cache
       if: env.ENABLE_CCACHE == 'true'
       run: |
         export CCACHE_DIR="$GITHUB_WORKSPACE/openwrt/.ccache"
-        export CCACHE_MAXSIZE="$CCACHE_SIZE"
-        export CCACHE_COMPILERCHECK=content
-
         mkdir -p "$CCACHE_DIR"
-
+        export CCACHE_COMPILERCHECK=content
+        echo "CCACHE_COMPILERCHECK=content" >> "$GITHUB_ENV"
         ccache --max-size="$CCACHE_SIZE"
         ccache --zero-stats
-
-        {
-          echo "CCACHE_DIR=$CCACHE_DIR"
-          echo "CCACHE_MAXSIZE=$CCACHE_MAXSIZE"
-          echo "CCACHE_COMPILERCHECK=$CCACHE_COMPILERCHECK"
-        } >> "$GITHUB_ENV"
-
-        echo "===== ccache version ====="
-        ccache --version
-
-        echo "===== ccache configuration ====="
-        ccache --show-config
+        echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
 
     - name: Update Feeds
       run: |
@@ -185,72 +173,106 @@ jobs:
 
         # 移除已有的 ccache 配置，避免重复定义
         sed -i -E '/^(CONFIG_CCACHE=|# CONFIG_CCACHE is not set|CONFIG_CCACHE_DIR=|# CONFIG_CCACHE_DIR is not set)/d' .config
-
         if [[ "$ENABLE_CCACHE" == true ]]; then
           sed -i -E '/^(CONFIG_DEVEL=|# CONFIG_DEVEL is not set)/d' .config
-
-          {
-            echo "CONFIG_DEVEL=y"
-            echo "CONFIG_CCACHE=y"
-            echo "CONFIG_CCACHE_DIR=\"$CCACHE_DIR\""
-          } >> .config
+          printf 'CONFIG_DEVEL=y\nCONFIG_CCACHE=y\nCONFIG_CCACHE_DIR="%s"\n' "$CCACHE_DIR" >> .config
         else
           echo "# CONFIG_CCACHE is not set" >> .config
         fi
-
         make defconfig -j$(nproc)
-
-        # 检查最终配置
-        echo "===== Final ccache configuration ====="
-        grep -E '^(CONFIG_DEVEL=|CONFIG_CCACHE=|CONFIG_CCACHE_DIR=|# CONFIG_CCACHE is not set)' .config || true
-
         if [[ "$ENABLE_CCACHE" == true ]]; then
-          if ! grep -qx 'CONFIG_CCACHE=y' .config; then
-            echo "::error::CONFIG_CCACHE was disabled after make defconfig"
-            exit 1
-          fi
-
-          if ! grep -Fxq "CONFIG_CCACHE_DIR=\"$CCACHE_DIR\"" .config; then
-            echo "::error::Unexpected CONFIG_CCACHE_DIR"
-            exit 1
-          fi
-
-          echo "ccache is enabled successfully."
+          grep -qx CONFIG_CCACHE=y .config
+          grep -Fx "CONFIG_CCACHE_DIR=\"$CCACHE_DIR\"" .config
         fi
+        grep -Ei '^CONFIG_PACKAGE_.*(rust|llvm).*=[ym]' .config || true
 
-    - name: Fix Rust CI LLVM download error
-      shell: bash
+    - name: Check and Fix Rust CI LLVM
       run: |
-        set -Eeuo pipefail
-        cd openwrt
+        cd ./openwrt
 
         RUST_MAKEFILE="feeds/packages/lang/rust/Makefile"
+
+        echo "===== Rust configuration ====="
+
         if [[ ! -f "$RUST_MAKEFILE" ]]; then
-          echo "Rust package Makefile not present in this feed snapshot; no patch needed."
+          echo "Rust Makefile not found, skipping."
           exit 0
         fi
 
-        echo "===== Rust Makefile before patch ====="
-        grep -nE 'download-ci-llvm|x.py' "$RUST_MAKEFILE" || true
+        grep -E '^PKG_VERSION:=' "$RUST_MAKEFILE" || true
 
-        # Avoid stale/missing Rust CI LLVM artifacts (common HTTP 404 failure).
-        sed -i -E \
-          -e 's/--set=llvm\.download-ci-llvm=(true|if-unchanged)/--set=llvm.download-ci-llvm=false/g' \
-          -e 's/download-ci-llvm[[:space:]]*=[[:space:]]*true/download-ci-llvm = false/g' \
-          "$RUST_MAKEFILE"
+        echo "===== Selected Rust related packages ====="
 
-        if grep -qE -- '--set=llvm\.download-ci-llvm=(true|if-unchanged)|download-ci-llvm[[:space:]]*=[[:space:]]*true' "$RUST_MAKEFILE"; then
-          echo "Rust LLVM CI download option remains enabled; aborting." >&2
-          exit 1
-        fi
+        grep -Ei '^CONFIG_PACKAGE_.*(rust|llvm).*=[ym]' \
+          .config || true
 
-        if grep -q -- '--set=llvm.download-ci-llvm=false' "$RUST_MAKEFILE"; then
-          echo "Rust LLVM CI download disabled."
+        echo "===== Rust LLVM configuration ====="
+
+        if grep -qF -- \
+          '--set=llvm.download-ci-llvm=true' "$RUST_MAKEFILE"; then
+
+          echo "Upstream uses CI LLVM download, applying fix."
+
+          sed -i \
+            's/--set=llvm.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/g' \
+            "$RUST_MAKEFILE"
+
+        elif grep -qF -- \
+          '--set=llvm.download-ci-llvm=false' "$RUST_MAKEFILE"; then
+
+          echo "Upstream already disables CI LLVM download."
+
         else
-          echo "No matching option found; leaving upstream Makefile unchanged."
+          echo "No matching LLVM configuration, keeping upstream unchanged."
         fi
-        echo "===== Rust Makefile after patch ====="
-        grep -nE 'download-ci-llvm|x.py' "$RUST_MAKEFILE" || true
+
+        echo "===== Final Rust LLVM configuration ====="
+
+        grep -nF 'llvm.download-ci-llvm' \
+          "$RUST_MAKEFILE" || true
+
+    - name: Prepare Build Cache Keys
+      run: |
+        cd openwrt
+        BUILD_FINGERPRINT=$({
+          git rev-parse HEAD
+          git diff HEAD -- tools toolchain include scripts target rules.mk Makefile config
+          find tools toolchain include scripts target config -type f -print0 | sort -z | xargs -0 -r sha256sum
+          # 只校验架构、内核和工具链配置，增减普通插件不影响缓存命中
+          grep -E '^CONFIG_(TARGET|TOOLCHAIN|GCC|LIBC|KERNEL|USE_MUSL|USE_GLIBC)' .config | sort
+          dpkg-query -W -f='${Package} ${Version}\n' | LC_ALL=C sort
+          printf '%s\n' "${ImageVersion:-unknown}"
+        } | sha256sum | cut -d ' ' -f1)
+        echo "BUILD_FINGERPRINT=$BUILD_FINGERPRINT" >> "$GITHUB_ENV"
+        
+        # Verify actual feed definitions before enabling Go cache; skip unknown layouts.
+        GO_MK=feeds/packages/lang/golang/golang-values.mk
+        if [[ "$ENABLE_GO_CACHE" == true && -f "$GO_MK" ]] &&           grep -Fq '$(TMP_DIR)/go-build' "$GO_MK" && grep -Fq '$(DL_DIR)/go-mod-cache' "$GO_MK" && ! grep -Eq '^CONFIG_GOLANG_BUILD_CACHE_DIR="[^" ]+"' .config; then
+          echo "GO_CACHE_READY=true" >> "$GITHUB_ENV"
+        else
+          echo "GO_CACHE_READY=false" >> "$GITHUB_ENV"
+        fi
+        grep -nE 'GO_BUILD_CACHE_DIR|GO_MOD_CACHE_DIR' "$GO_MK" || true
+
+    - name: Restore Go Cache
+      id: go_cache
+      if: env.GO_CACHE_READY == 'true'
+      uses: actions/cache/restore@v5
+      with:
+        path: openwrt/tmp/go-build
+        key: go-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ env.BUILD_FINGERPRINT }}-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: |
+          go-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ env.BUILD_FINGERPRINT }}-
+
+    - name: Restore Toolchain Cache
+      id: toolchain_cache
+      if: env.ENABLE_TOOLCHAIN_CACHE == 'true'
+      uses: actions/cache/restore@v5
+      with:
+        path: |
+          openwrt/staging_dir/host
+          openwrt/staging_dir/toolchain-*
+        key: toolchain-${{ env.RUNNER_OS_VERSION }}-${{ runner.arch }}-${{ env.WRT_TARGET }}-${{ env.BUILD_FINGERPRINT }}
 
     - name: Download Packages
       run: |
@@ -260,54 +282,82 @@ jobs:
 
     - name: Compile the firmware
       id: compile
+      shell: bash
       run: |
-        cd ./openwrt
-        echo -e "$(nproc) thread compile"
-        if ! (make -j$(nproc) || make -j1 V=s &>build.log); then
-          tail -50 build.log
-
-          # 提取关键错误日志并存入多行环境变量，供后续统一推送步骤使用
-          KEY_ERRORS=$(grep -iE "error:|failed" build.log | tail -n 10 || true)
-          TAIL_LOG=$(tail -n 10 build.log)
-          {
-            echo "ERROR_LOG<<EOF"
-            echo "${KEY_ERRORS}"
-            echo "--- 末尾日志 ---"
-            echo "${TAIL_LOG}"
-            echo "EOF"
-          } >> $GITHUB_ENV
-
-          exit 1
-        fi
+        set -o pipefail
+        cd openwrt
+        START=$(date +%s)
+        (while sleep 300; do
+          echo "===== Build heartbeat $(date -Is) ====="
+          free -h; df -h .; uptime
+        done) &
+        HEARTBEAT=$!
+        trap 'kill "$HEARTBEAT" 2>/dev/null || true; echo "BUILD_SECONDS=$(($(date +%s)-START))" >> "$GITHUB_ENV"' EXIT
+        phase() {
+          local label=$1 start rc=0
+          shift
+          start=$(date +%s)
+          echo "::group::$label"
+          make -j"$(nproc)" "$@" 2>&1 | tee "build-${label}.log" || rc=$?
+          if (( rc != 0 )); then
+            make -j1 V=s "$@" 2>&1 | tee "build-${label}-retry.log" || {
+              { echo 'ERROR_LOG<<BUILD_ERROR'; tail -n 30 "build-${label}-retry.log" | cut -c1-180; echo BUILD_ERROR; } >> "$GITHUB_ENV"
+              echo '::endgroup::'
+              return 1
+            }
+          fi
+          echo '::endgroup::'
+          printf '%s: %s seconds\n' "$label" "$(($(date +%s)-start))" | tee -a "$GITHUB_STEP_SUMMARY"
+        }
+        phase tools tools/install
+        phase toolchain toolchain/install
+        phase target target/compile
+        phase packages package/compile
+        phase firmware
 
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Cache Statistics
       if: always() && env.ENABLE_CCACHE == 'true'
       run: |
-        echo "===== Final build configuration ====="
-        grep -E '^CONFIG_(DEVEL|CCACHE|CCACHE_DIR)=' openwrt/.config || true
-
-        echo "===== System ccache statistics ====="
         ccache --show-stats || true
+        HIT=$(ccache --show-stats | awk '/^[[:space:]]*Hits:/ {print $NF; exit}' | tr -d '()')
+        echo "CCACHE_HIT_RATE=${HIT:-unknown}" >> "$GITHUB_ENV"
+        du -sh openwrt/dl openwrt/.ccache openwrt/tmp/go-build openwrt/dl/go-mod-cache openwrt/staging_dir/host openwrt/staging_dir/toolchain-* openwrt/build_dir/host openwrt/build_dir/toolchain-* 2>/dev/null || true
 
-        echo "===== OpenWrt ccache statistics ====="
-        if [[ -x openwrt/staging_dir/host/bin/ccache ]]; then
-          openwrt/staging_dir/host/bin/ccache --version
-          openwrt/staging_dir/host/bin/ccache -s || true
-        fi
+    - name: Save Download Cache
+      if: steps.compile.outcome == 'success' && env.ENABLE_DL_CACHE == 'true' && steps.dl_cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v5
+      with:
+        path: openwrt/dl
+        key: ${{ steps.dl_cache.outputs.cache-primary-key }}
 
-        echo "===== Cache directory size ====="
-        du -sh openwrt/dl openwrt/.ccache || true
+    - name: Save Compiler Cache
+      if: steps.compile.outcome == 'success' && env.ENABLE_CCACHE == 'true' && steps.compiler_cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v5
+      with:
+        path: openwrt/.ccache
+        key: ${{ steps.compiler_cache.outputs.cache-primary-key }}
 
-        echo "===== Cache file count ====="
-        if [[ -d openwrt/.ccache ]]; then
-          find openwrt/.ccache -type f | wc -l
-        fi
+    - name: Save Go Cache
+      if: steps.compile.outcome == 'success' && env.GO_CACHE_READY == 'true' && steps.go_cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v5
+      with:
+        path: openwrt/tmp/go-build
+        key: ${{ steps.go_cache.outputs.cache-primary-key }}
 
-        echo "===== Other possible ccache directories ====="
-        find openwrt "$HOME/.cache" -type d \
-          -name '.ccache' -print 2>/dev/null || true
+    - name: Save Toolchain Cache
+      if: steps.compile.outcome == 'success' && env.ENABLE_TOOLCHAIN_CACHE == 'true' && steps.toolchain_cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v5
+      with:
+        path: |
+          openwrt/staging_dir/host
+          openwrt/staging_dir/toolchain-*
+        key: ${{ steps.toolchain_cache.outputs.cache-primary-key }}
 
     - name: Machine Information
       if: always()
@@ -369,6 +419,7 @@ jobs:
 
     - name: Push Information Notice
       if: always() && env.INFORMATION_NOTICE == 'true' && !cancelled()
+      continue-on-error: true
       env:
         WXPUSHER_SPT: ${{ secrets.WXPUSHER_SPT }}
         COMPILE_STATUS: ${{ steps.compile.outcome }}
@@ -391,13 +442,16 @@ jobs:
             "$WRT_SOURCE" "$WRT_REPO" "$WRT_BRANCH" "$WRT_TARGET" "$WRT_PLUGIN" "$RUN_NUMBER" "$NOW_TIME" "${ERROR_LOG:-未捕获到详细错误日志，请前往 Actions 页面查看}")
         fi
 
+        SECONDS_TOTAL=${BUILD_SECONDS:-0}
+        CONTENT+=$(printf '\n\n⏱️编译耗时：%s小时%s分钟\n\n📦ccache 命中率：%s' "$((SECONDS_TOTAL/3600))" "$((SECONDS_TOTAL%3600/60))" "${CCACHE_HIT_RATE:-未知}")
+
         JSON_DATA=$(jq -n \
           --arg spt "$WXPUSHER_SPT" \
           --arg summary "$SUMMARY" \
           --arg content "$CONTENT" \
           '{spt: $spt, summary: $summary, content: $content, contentType: 1}')
 
-        curl -s -X POST "https://wxpusher.zjiecode.com/api/send/message/simple-push" \
+        curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 30 -X POST "https://wxpusher.zjiecode.com/api/send/message/simple-push" \
           -H "Content-Type: application/json" \
           -d "$JSON_DATA"
 

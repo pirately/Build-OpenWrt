@@ -28,15 +28,25 @@ KCONFIG
 if [[ $WRT_PLUGIN == "passwall" ]] ; then
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
+  # 关闭不需要的 多余插件
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Server=n" >> .config
 fi
 if [[ $WRT_PLUGIN == "passwall2" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-passwall2=y" >> .config
   # 适配新版 PassWall2 Makefile 的单选菜单（同时包含 Xray 和 SingBox）
   echo "CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_All=y" >> .config
   # 强制选中底层内核包
-  echo "CONFIG_PACKAGE_xray-core=y" >> .config
-  echo "CONFIG_PACKAGE_sing-box=y" >> .config
-  # 关闭不需要的 v2ray-plugin
+  # echo "CONFIG_PACKAGE_xray-core=y" >> .config
+  # echo "CONFIG_PACKAGE_sing-box=y" >> .config
+  # 关闭不需要的 多余插件
+  echo "CONFIG_PACKAGE_luci-app-passwall=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Haproxy=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Server=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SmartDNS=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_Shadowsocks_Rust_Client=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_Shadowsocks_Rust_Server=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_V2ray_Plugin=n" >> .config
   echo "CONFIG_PACKAGE_v2ray-plugin=n" >> .config
 fi
