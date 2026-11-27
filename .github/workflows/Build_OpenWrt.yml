@@ -74,13 +74,19 @@ jobs:
         WRT_SOURCE=$(echo "$WRT_REPO" | cut -d '/' -f 5-)
         WRT_VER="${WRT_SOURCE}-${WRT_BRANCH}"
         WRT_TYPE=$(grep -m 1 -oP '^CONFIG_TARGET_\K[\w]+(?=\=y)' "./config/${WRT_TARGET}.config" | tr '[:lower:]' '[:upper:]')
+
+        # 自动获取 Runner 系统及版本
+        source /etc/os-release
+        RUNNER_OS_VERSION="${ID}-${VERSION_ID}"
+
         {
           echo "WRT_DATE=$WRT_DATE"
           echo "WRT_TIME=$WRT_TIME"
           echo "WRT_SOURCE=$WRT_SOURCE"
           echo "WRT_VER=$WRT_VER"
           echo "WRT_TYPE=$WRT_TYPE"
-        } >> $GITHUB_ENV
+          echo "RUNNER_OS_VERSION=$RUNNER_OS_VERSION"
+        } >> "$GITHUB_ENV"
 
     - name: Clone Source Code
       run: |
@@ -109,18 +115,33 @@ jobs:
       uses: actions/cache@v5
       with:
         path: openwrt/.ccache
-        key: ccache-v2-ubuntu24-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ github.run_id }}-${{ github.run_attempt }}
+        key: ccache-v3-${{ env.RUNNER_OS_VERSION }}-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ github.run_id }}-${{ github.run_attempt }}
         restore-keys: |
-          ccache-v2-ubuntu24-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
+          ccache-v3-${{ env.RUNNER_OS_VERSION }}-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
 
     - name: Configure Compiler Cache
       if: env.ENABLE_CCACHE == 'true'
       run: |
         export CCACHE_DIR="$GITHUB_WORKSPACE/openwrt/.ccache"
+        export CCACHE_MAXSIZE="$CCACHE_SIZE"
+        export CCACHE_COMPILERCHECK=content
+
         mkdir -p "$CCACHE_DIR"
+
         ccache --max-size="$CCACHE_SIZE"
         ccache --zero-stats
-        echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+
+        {
+          echo "CCACHE_DIR=$CCACHE_DIR"
+          echo "CCACHE_MAXSIZE=$CCACHE_MAXSIZE"
+          echo "CCACHE_COMPILERCHECK=$CCACHE_COMPILERCHECK"
+        } >> "$GITHUB_ENV"
+
+        echo "===== ccache version ====="
+        ccache --version
+
+        echo "===== ccache configuration ====="
+        ccache --show-config
 
     - name: Update Feeds
       run: |
@@ -162,12 +183,40 @@ jobs:
         "$GITHUB_WORKSPACE/scripts/diy.sh"
         "$GITHUB_WORKSPACE/scripts/diy_op.sh"
 
+        # 移除已有的 ccache 配置，避免重复定义
+        sed -i -E '/^(CONFIG_CCACHE=|# CONFIG_CCACHE is not set|CONFIG_CCACHE_DIR=|# CONFIG_CCACHE_DIR is not set)/d' .config
+
         if [[ "$ENABLE_CCACHE" == true ]]; then
-          echo "CONFIG_CCACHE=y" >> .config
+          sed -i -E '/^(CONFIG_DEVEL=|# CONFIG_DEVEL is not set)/d' .config
+
+          {
+            echo "CONFIG_DEVEL=y"
+            echo "CONFIG_CCACHE=y"
+            echo "CONFIG_CCACHE_DIR=\"$CCACHE_DIR\""
+          } >> .config
         else
           echo "# CONFIG_CCACHE is not set" >> .config
         fi
+
         make defconfig -j$(nproc)
+
+        # 检查最终配置
+        echo "===== Final ccache configuration ====="
+        grep -E '^(CONFIG_DEVEL=|CONFIG_CCACHE=|CONFIG_CCACHE_DIR=|# CONFIG_CCACHE is not set)' .config || true
+
+        if [[ "$ENABLE_CCACHE" == true ]]; then
+          if ! grep -qx 'CONFIG_CCACHE=y' .config; then
+            echo "::error::CONFIG_CCACHE was disabled after make defconfig"
+            exit 1
+          fi
+
+          if ! grep -Fxq "CONFIG_CCACHE_DIR=\"$CCACHE_DIR\"" .config; then
+            echo "::error::Unexpected CONFIG_CCACHE_DIR"
+            exit 1
+          fi
+
+          echo "ccache is enabled successfully."
+        fi
 
     - name: Fix Rust CI LLVM download error
       shell: bash
@@ -236,8 +285,29 @@ jobs:
     - name: Cache Statistics
       if: always() && env.ENABLE_CCACHE == 'true'
       run: |
+        echo "===== Final build configuration ====="
+        grep -E '^CONFIG_(DEVEL|CCACHE|CCACHE_DIR)=' openwrt/.config || true
+
+        echo "===== System ccache statistics ====="
         ccache --show-stats || true
+
+        echo "===== OpenWrt ccache statistics ====="
+        if [[ -x openwrt/staging_dir/host/bin/ccache ]]; then
+          openwrt/staging_dir/host/bin/ccache --version
+          openwrt/staging_dir/host/bin/ccache -s || true
+        fi
+
+        echo "===== Cache directory size ====="
         du -sh openwrt/dl openwrt/.ccache || true
+
+        echo "===== Cache file count ====="
+        if [[ -d openwrt/.ccache ]]; then
+          find openwrt/.ccache -type f | wc -l
+        fi
+
+        echo "===== Other possible ccache directories ====="
+        find openwrt "$HOME/.cache" -type d \
+          -name '.ccache' -print 2>/dev/null || true
 
     - name: Machine Information
       if: always()
