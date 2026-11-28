@@ -234,24 +234,46 @@ jobs:
     - name: Prepare Build Cache Keys
       run: |
         cd openwrt
+
+        # 工具链缓存指纹
         BUILD_FINGERPRINT=$({
-          git rev-parse HEAD
-          git diff HEAD -- tools toolchain include scripts target rules.mk Makefile config
-          find tools toolchain include scripts target config -type f -print0 | sort -z | xargs -0 -r sha256sum
-          # 只校验架构、内核和工具链配置，增减普通插件不影响缓存命中
-          grep -E '^CONFIG_(TARGET|TOOLCHAIN|GCC|LIBC|KERNEL|USE_MUSL|USE_GLIBC)' .config | sort
+          # 构建环境
+          printf '%s\n' "$RUNNER_OS_VERSION"
+          printf '%s\n' "$RUNNER_ARCH"
+          printf '%s\n' "$PWD"
+
+          # 宿主机软件包版本
           dpkg-query -W -f='${Package} ${Version}\n' | LC_ALL=C sort
-          printf '%s\n' "${ImageVersion:-unknown}"
+
+          # 工具链及构建系统源码
+          find tools toolchain include scripts target config \
+            -type f -print0 |
+            LC_ALL=C sort -z |
+            xargs -0 -r sha256sum
+
+          sha256sum rules.mk Makefile
+
+          # 架构、内核及工具链配置
+          grep -E '^(# )?CONFIG_(TARGET|TOOLCHAIN|GCC|BINUTILS|LIBC|MUSL|GLIBC|KERNEL|USE_MUSL|USE_GLIBC|EXTERNAL_TOOLCHAIN|CCACHE)' \
+            .config | LC_ALL=C sort || true
+
         } | sha256sum | cut -d ' ' -f1)
+
         echo "BUILD_FINGERPRINT=$BUILD_FINGERPRINT" >> "$GITHUB_ENV"
-        
-        # Verify actual feed definitions before enabling Go cache; skip unknown layouts.
+        echo "Toolchain fingerprint: $BUILD_FINGERPRINT"
+
+        # 检查 Go 缓存目录
         GO_MK=feeds/packages/lang/golang/golang-values.mk
-        if [[ "$ENABLE_GO_CACHE" == true && -f "$GO_MK" ]] &&           grep -Fq '$(TMP_DIR)/go-build' "$GO_MK" && grep -Fq '$(DL_DIR)/go-mod-cache' "$GO_MK" && ! grep -Eq '^CONFIG_GOLANG_BUILD_CACHE_DIR="[^" ]+"' .config; then
+
+        if [[ "$ENABLE_GO_CACHE" == true && -f "$GO_MK" ]] &&
+           grep -Fq '$(TMP_DIR)/go-build' "$GO_MK" &&
+           grep -Fq '$(DL_DIR)/go-mod-cache' "$GO_MK" &&
+           ! grep -Eq '^CONFIG_GOLANG_BUILD_CACHE_DIR="[^" ]+"' .config; then
           echo "GO_CACHE_READY=true" >> "$GITHUB_ENV"
         else
           echo "GO_CACHE_READY=false" >> "$GITHUB_ENV"
         fi
+
         grep -nE 'GO_BUILD_CACHE_DIR|GO_MOD_CACHE_DIR' "$GO_MK" || true
 
     - name: Restore Go Cache
@@ -260,9 +282,9 @@ jobs:
       uses: actions/cache/restore@v5
       with:
         path: openwrt/tmp/go-build
-        key: go-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ env.BUILD_FINGERPRINT }}-${{ github.run_id }}-${{ github.run_attempt }}
+        key: go-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ github.run_id }}-${{ github.run_attempt }}
         restore-keys: |
-          go-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ env.BUILD_FINGERPRINT }}-
+          go-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-
 
     - name: Restore Toolchain Cache
       id: toolchain_cache
@@ -272,7 +294,7 @@ jobs:
         path: |
           openwrt/staging_dir/host
           openwrt/staging_dir/toolchain-*
-        key: toolchain-${{ env.RUNNER_OS_VERSION }}-${{ runner.arch }}-${{ env.WRT_TARGET }}-${{ env.BUILD_FINGERPRINT }}
+        key: toolchain-${{ env.RUNNER_OS_VERSION }}-${{ runner.arch }}-${{ env.WRT_VER }}-${{ env.WRT_TARGET }}-${{ env.BUILD_FINGERPRINT }}
 
     - name: Download Packages
       run: |
@@ -360,7 +382,7 @@ jobs:
         key: ${{ steps.toolchain_cache.outputs.cache-primary-key }}
 
     - name: Cleanup old build caches
-      if: steps.compile.outcome == 'success' && !cancelled()
+      if: success() && steps.compile.outcome == 'success'
       continue-on-error: true
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -369,6 +391,8 @@ jobs:
           local prefix="$1"
           local keep="$2"
 
+          echo "===== Cleanup: $prefix ====="
+
           gh cache list \
             --ref "$GITHUB_REF" \
             --key "$prefix" \
@@ -376,8 +400,11 @@ jobs:
             --sort created_at \
             --order desc \
             --json id,key,createdAt |
-          jq -r --arg prefix "$prefix" --argjson keep "$keep" \
-            'map(select(.key | startswith($prefix))) | .[$keep:] | .[].id' |
+          jq -r \
+            --arg prefix "$prefix" \
+            --argjson keep "$keep" \
+            'map(select(.key | startswith($prefix))) |
+             .[$keep:] | .[].id' |
           while read -r CACHE_ID; do
             echo "Deleting old cache: $CACHE_ID"
             gh cache delete "$CACHE_ID" || true
@@ -385,9 +412,12 @@ jobs:
         }
 
         cleanup_cache "dl-${WRT_VER}-${WRT_TARGET}-" 1
+
         cleanup_cache "ccache-${RUNNER_ARCH}-${WRT_VER}-${WRT_TARGET}-" 1
+
         cleanup_cache "go-${RUNNER_ARCH}-${WRT_VER}-${WRT_TARGET}-" 1
-        cleanup_cache "toolchain-${RUNNER_OS_VERSION}-${RUNNER_ARCH}-${WRT_TARGET}-" 2
+
+        cleanup_cache "toolchain-${RUNNER_OS_VERSION}-${RUNNER_ARCH}-${WRT_VER}-${WRT_TARGET}-" 2
 
     - name: Machine Information
       if: always()
