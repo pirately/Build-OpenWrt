@@ -359,6 +359,36 @@ jobs:
           openwrt/staging_dir/toolchain-*
         key: ${{ steps.toolchain_cache.outputs.cache-primary-key }}
 
+    - name: Cleanup old build caches
+      if: steps.compile.outcome == 'success' && !cancelled()
+      continue-on-error: true
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        cleanup_cache() {
+          local prefix="$1"
+          local keep="$2"
+
+          gh cache list \
+            --ref "$GITHUB_REF" \
+            --key "$prefix" \
+            --limit 100 \
+            --sort created_at \
+            --order desc \
+            --json id,key,createdAt |
+          jq -r --arg prefix "$prefix" --argjson keep "$keep" \
+            'map(select(.key | startswith($prefix))) | .[$keep:] | .[].id' |
+          while read -r CACHE_ID; do
+            echo "Deleting old cache: $CACHE_ID"
+            gh cache delete "$CACHE_ID" || true
+          done
+        }
+
+        cleanup_cache "dl-${WRT_VER}-${WRT_TARGET}-" 1
+        cleanup_cache "ccache-${RUNNER_ARCH}-${WRT_VER}-${WRT_TARGET}-" 1
+        cleanup_cache "go-${RUNNER_ARCH}-${WRT_VER}-${WRT_TARGET}-" 1
+        cleanup_cache "toolchain-${RUNNER_OS_VERSION}-${RUNNER_ARCH}-${WRT_TARGET}-" 2
+
     - name: Machine Information
       if: always()
       run: |
