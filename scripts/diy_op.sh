@@ -29,8 +29,11 @@ if [[ $WRT_PLUGIN == "passwall" ]] ; then
   # 增加luci界面
   echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
   # 关闭不需要的 多余插件
+  echo "CONFIG_PACKAGE_shadowsocks-rust-sslocal=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Server=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Simple_Obfs=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Plugin=n" >> .config
 fi
 if [[ $WRT_PLUGIN == "passwall2" ]] ; then
   echo "CONFIG_PACKAGE_luci-app-passwall2=y" >> .config
@@ -40,13 +43,19 @@ if [[ $WRT_PLUGIN == "passwall2" ]] ; then
   # echo "CONFIG_PACKAGE_xray-core=y" >> .config
   # echo "CONFIG_PACKAGE_sing-box=y" >> .config
   # 关闭不需要的 多余插件
-  echo "CONFIG_PACKAGE_luci-app-passwall=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Haproxy=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Server=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Simple_Obfs=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SingBox=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SmartDNS=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geoview=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Plugin=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_Shadowsocks_Rust_Client=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_Shadowsocks_Rust_Server=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_ShadowsocksR_Libev_Client=n" >> .config
+  echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_Simple_Obfs=n" >> .config
   echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_V2ray_Plugin=n" >> .config
   echo "CONFIG_PACKAGE_v2ray-plugin=n" >> .config
 fi
